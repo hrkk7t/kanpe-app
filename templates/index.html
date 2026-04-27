@@ -20,8 +20,15 @@
                 <div style="display: flex; gap: 5px;">
                     <button class="font-btn" onclick="changeFontSize(0.2)" title="文字を大きく"><span class="material-symbols-outlined">zoom_in</span></button>
                     <button class="font-btn" onclick="changeFontSize(-0.2)" title="文字を小さく"><span class="material-symbols-outlined">zoom_out</span></button>
+                    <button class="font-btn" onclick="togglePracticeMode()" title="練習モード"><span class="material-symbols-outlined" id="practice-icon">visibility_off</span></button>
+                    <button class="font-btn" onclick="toggleFilterImportant()" title="重要項目のみ表示"><span class="material-symbols-outlined" id="filter-icon">filter_alt</span></button>
+                    <button class="font-btn" onclick="toggleProductionMode()" title="本番モード"><span class="material-symbols-outlined" id="production-icon">cast</span></button>
                     <button class="font-btn" onclick="toggleDarkMode()" title="ダークモード切替"><span class="material-symbols-outlined" id="dark-mode-icon">dark_mode</span></button>
                     <button class="font-btn" onclick="resetAllData()" title="全てのデータをリセット"><span class="material-symbols-outlined" style="color: #e74c3c;">restart_alt</span></button>
+                </div>
+                <div class="search-wrapper">
+                    <input type="text" id="search-input" placeholder="キーワードで検索..." oninput="handleSearch(this.value)">
+                    <div id="search-results" class="search-results-container"></div>
                 </div>
                 <button class="save-btn" onclick="saveData()">
                     <span class="material-symbols-outlined" style="font-size: 20px;">save</span> 保存
@@ -60,8 +67,20 @@
                 <textarea id="memo" placeholder="ちょっとしたメモ..."></textarea>
             </div>
 
-            <textarea id="question" placeholder="質問を入力" rows="1"></textarea>
-            <textarea id="answer" placeholder="ここにカンペの本文がでる"></textarea>
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+                <button id="star-btn" class="icon-btn" onclick="toggleStar()" title="重要マーク" style="margin-top: 5px; border: none; background: transparent;">
+                    <span class="material-symbols-outlined" id="star-icon">star</span>
+                </button>
+                <textarea id="question" placeholder="質問を入力" rows="1"></textarea>
+            </div>
+            
+            <div style="position: relative;">
+                <textarea id="answer" placeholder="ここにカンペの本文がでる"></textarea>
+                <div id="practice-overlay" class="practice-overlay">
+                    <button onclick="revealAnswer()" class="save-btn">答えを確認する</button>
+                </div>
+            </div>
+            <div id="char-count" class="char-count">0 文字 (約 0秒)</div>
         </div>
     </div>
 

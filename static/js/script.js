@@ -4,6 +4,9 @@ let currentMid = "";
 let currentSmall = "";
 let currentFontSize = 1.2;
 let currentNoteColor = "#fff9c4";
+let isPracticeMode = false;
+let isFilterActive = false;
+let isProductionMode = false;
 
 async function loadData() {
     const response = await fetch('/api/data');
@@ -29,10 +32,14 @@ function updateAllUI() {
 
 function renderContent() {
     const questionInput = document.getElementById('question');
-    questionInput.value = appData[currentBig][currentMid][currentSmall].question;
-    document.getElementById('answer').value = appData[currentBig][currentMid][currentSmall].answer;
-    document.getElementById('memo').value = appData[currentBig][currentMid][currentSmall].memo || "";
+    const item = appData[currentBig][currentMid][currentSmall];
+    questionInput.value = item.question;
+    document.getElementById('answer').value = item.answer;
+    document.getElementById('memo').value = item.memo || "";
     
+    const starIcon = document.getElementById('star-icon');
+    starIcon.className = 'material-symbols-outlined' + (item.important ? ' active' : '');
+
     // 質問欄の高さを内容に合わせて調整
     autoResizeQuestion();
     
@@ -44,6 +51,82 @@ function renderContent() {
     setNoteColor(appData[currentBig][currentMid][currentSmall].color || "#fff9c4");
     // 現在のフォントサイズ設定を適用
     applyFontSize();
+    updateCharCount();
+    
+    // 練習モードの表示リセット
+    if (isPracticeMode) {
+        document.getElementById('practice-overlay').style.display = 'flex';
+    }
+}
+
+function togglePracticeMode() {
+    isPracticeMode = !isPracticeMode;
+    const overlay = document.getElementById('practice-overlay');
+    const icon = document.getElementById('practice-icon');
+    
+    overlay.style.display = isPracticeMode ? 'flex' : 'none';
+    icon.innerText = isPracticeMode ? 'visibility' : 'visibility_off';
+    showToast(isPracticeMode ? "練習モードON" : "練習モードOFF");
+}
+
+function revealAnswer() {
+    document.getElementById('practice-overlay').style.display = 'none';
+}
+
+function toggleFilterImportant() {
+    isFilterActive = !isFilterActive;
+    document.getElementById('filter-icon').classList.toggle('active', isFilterActive);
+    
+    if (isFilterActive) {
+        // 現在の項目が重要でない場合、最初の重要項目へ移動
+        const item = appData[currentBig][currentMid][currentSmall];
+        if (!item.important) {
+            findFirstImportant();
+        }
+    }
+    updateAllUI();
+    showToast(isFilterActive ? "重要項目のみ表示中" : "すべての項目を表示");
+}
+
+function findFirstImportant() {
+    for (const b in appData) {
+        for (const m in appData[b]) {
+            for (const s in appData[b][m]) {
+                if (appData[b][m][s].important) {
+                    currentBig = b; currentMid = m; currentSmall = s;
+                    return;
+                }
+            }
+        }
+    }
+}
+
+function toggleProductionMode() {
+    isProductionMode = !isProductionMode;
+    document.body.classList.toggle('production-mode', isProductionMode);
+    
+    const fields = ['question', 'answer', 'memo'];
+    fields.forEach(id => {
+        document.getElementById(id).readOnly = isProductionMode;
+    });
+
+    const icon = document.getElementById('production-icon');
+    icon.innerText = isProductionMode ? 'edit_note' : 'cast';
+    
+    showToast(isProductionMode ? "本番モードON（編集不可）" : "編集モードに戻りました");
+}
+
+function toggleStar() {
+    const item = appData[currentBig][currentMid][currentSmall];
+    item.important = !item.important;
+    renderContent();
+}
+
+function updateCharCount() {
+    const text = document.getElementById('answer').value;
+    const count = text.length;
+    const seconds = Math.floor(count / 5); // 1秒間5文字(分300文字)計算
+    document.getElementById('char-count').innerText = `${count} 文字 (目安: 約 ${seconds}秒)`;
 }
 
 function autoResizeQuestion() {
@@ -143,10 +226,59 @@ function setNoteColor(color) {
 function renderTabs() {
     const container = document.getElementById('tabs-container');
     container.innerHTML = "";
+
+    const hasImportantInBig = (big) => {
+        if (!isFilterActive) return true;
+        return Object.values(appData[big]).some(midObj => 
+            Object.values(midObj).some(item => item.important));
+    };
+
     Object.keys(appData).forEach(big => {
+        if (!hasImportantInBig(big)) return;
         const tab = document.createElement('div');
         tab.className = `tab ${big === currentBig ? 'active' : ''}`;
         tab.innerText = big;
+        tab.draggable = true;
+        
+        // ドラッグ開始
+        tab.ondragstart = (e) => {
+            e.dataTransfer.setData("text/plain", big);
+            tab.classList.add('dragging');
+        };
+        
+        // ドラッグ中
+        tab.ondragover = (e) => {
+            e.preventDefault();
+            tab.classList.add('drag-over');
+        };
+        
+        tab.ondragleave = () => tab.classList.remove('drag-over');
+
+        // ドロップ処理（入れ替え）
+        tab.ondrop = (e) => {
+            e.preventDefault();
+            tab.classList.remove('drag-over');
+            const draggedKey = e.dataTransfer.getData("text/plain");
+            if (draggedKey === big) return;
+
+            const keys = Object.keys(appData);
+            const fromIndex = keys.indexOf(draggedKey);
+            const toIndex = keys.indexOf(big);
+
+            keys.splice(fromIndex, 1);
+            keys.splice(toIndex, 0, draggedKey);
+
+            // オブジェクトのキーを並び替えて再構築
+            const newData = {};
+            keys.forEach(k => newData[k] = appData[k]);
+            appData = newData;
+            
+            renderTabs();
+            showToast("順番を変更しました（保存を忘れずに）");
+        };
+
+        tab.ondragend = () => tab.classList.remove('dragging');
+
         tab.onclick = () => { saveCurrentInput(); currentBig = big; currentMid = Object.keys(appData[big])[0]; currentSmall = Object.keys(appData[big][currentMid])[0]; updateAllUI(); };
         container.appendChild(tab);
     });
@@ -155,7 +287,14 @@ function renderTabs() {
 function renderMidSelect() {
     const select = document.getElementById('mid-select');
     select.innerHTML = "";
+    
+    const hasImportantInMid = (mid) => {
+        if (!isFilterActive) return true;
+        return Object.values(appData[currentBig][mid]).some(item => item.important);
+    };
+
     Object.keys(appData[currentBig]).forEach(mid => {
+        if (!hasImportantInMid(mid)) return;
         const opt = new Option(mid, mid);
         if (mid === currentMid) opt.selected = true;
         select.add(opt);
@@ -165,7 +304,10 @@ function renderMidSelect() {
 function renderSmallSelect() {
     const select = document.getElementById('small-select');
     select.innerHTML = "";
+
     Object.keys(appData[currentBig][currentMid]).forEach(small => {
+        if (isFilterActive && !appData[currentBig][currentMid][small].important) return;
+
         const opt = new Option(small, small);
         if (small === currentSmall) opt.selected = true;
         select.add(opt);
@@ -205,6 +347,9 @@ function showBreadcrumbPopup(event, type) {
 
     if (type === 'mid') {
         items = Object.keys(appData[currentBig]);
+        if (isFilterActive) {
+            items = items.filter(m => Object.values(appData[currentBig][m]).some(i => i.important));
+        }
         currentActive = currentMid;
         onSelect = (val) => {
             currentMid = val;
@@ -212,6 +357,9 @@ function showBreadcrumbPopup(event, type) {
         };
     } else {
         items = Object.keys(appData[currentBig][currentMid]);
+        if (isFilterActive) {
+            items = items.filter(s => appData[currentBig][currentMid][s].important);
+        }
         currentActive = currentSmall;
         onSelect = (val) => {
             currentSmall = val;
@@ -354,6 +502,55 @@ async function resetAllData() {
     }
 }
 
+function handleSearch(query) {
+    const resultsContainer = document.getElementById('search-results');
+    if (!query) {
+        resultsContainer.classList.remove('active');
+        return;
+    }
+
+    const results = [];
+    const q = query.toLowerCase();
+
+    for (const big in appData) {
+        for (const mid in appData[big]) {
+            for (const small in appData[big][mid]) {
+                const item = appData[big][mid][small];
+                if (small.toLowerCase().includes(q) || 
+                    item.question.toLowerCase().includes(q) || 
+                    item.answer.toLowerCase().includes(q)) {
+                    results.push({ big, mid, small, question: item.question || small });
+                }
+            }
+        }
+    }
+
+    resultsContainer.innerHTML = "";
+    if (results.length > 0) {
+        resultsContainer.classList.add('active');
+        results.forEach(res => {
+            const div = document.createElement('div');
+            div.className = 'search-item';
+            div.innerHTML = `
+                <div class="item-path">${res.big} ＞ ${res.mid}</div>
+                <div class="item-text">${res.question}</div>
+            `;
+            div.onclick = () => {
+                saveCurrentInput();
+                currentBig = res.big;
+                currentMid = res.mid;
+                currentSmall = res.small;
+                updateAllUI();
+                resultsContainer.classList.remove('active');
+                document.getElementById('search-input').value = "";
+            };
+            resultsContainer.appendChild(div);
+        });
+    } else {
+        resultsContainer.classList.remove('active');
+    }
+}
+
 window.onload = () => {
     loadData();
     initDraggable();
@@ -365,4 +562,20 @@ window.onload = () => {
     
     // 質問入力時にも高さを自動調整
     document.getElementById('question').addEventListener('input', autoResizeQuestion);
+    document.getElementById('answer').addEventListener('input', updateCharCount);
+
+    // ショートカットキー設定
+    window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            saveData();
+        }
+    });
+
+    // 検索窓以外をクリックしたら検索結果を閉じる
+    window.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-wrapper')) {
+            document.getElementById('search-results').classList.remove('active');
+        }
+    });
 };
