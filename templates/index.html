@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>面接カンペ</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+</head>
+<body>
+    <audio id="save-sound" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" preload="auto"></audio>
+    <div id="toast-container"></div>
+
+    <div class="outer-container">
+        <div class="tabs">
+            <div id="tabs-container" style="display: flex; flex-wrap: wrap; gap: 5px;"></div>
+        </div>
+        <div class="card">
+            <div class="toolbar">
+                <div style="display: flex; gap: 5px;">
+                    <button class="font-btn" onclick="changeFontSize(0.2)" title="文字を大きく"><span class="material-symbols-outlined">zoom_in</span></button>
+                    <button class="font-btn" onclick="changeFontSize(-0.2)" title="文字を小さく"><span class="material-symbols-outlined">zoom_out</span></button>
+                    <button class="font-btn" onclick="toggleDarkMode()" title="ダークモード切替"><span class="material-symbols-outlined" id="dark-mode-icon">dark_mode</span></button>
+                    <button class="font-btn" onclick="resetAllData()" title="全てのデータをリセット"><span class="material-symbols-outlined" style="color: #e74c3c;">restart_alt</span></button>
+                </div>
+                <button class="save-btn" onclick="saveData()">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">save</span> 保存
+                </button>
+            </div>
+
+            <div id="breadcrumb" class="breadcrumb">
+                大 ＞ 中 ＞ 小
+            </div>
+
+            <div class="hierarchy-nav">
+                <div class="nav-group">
+                    中カテゴリ: 
+                    <select id="mid-select" onchange="changeMid()"></select>
+                    <button class="icon-btn" onclick="addMid()" title="追加"><span class="material-symbols-outlined">add</span></button>
+                    <button class="icon-btn" onclick="renameMid()" title="名前の変更"><span class="material-symbols-outlined">edit</span></button>
+                    <button class="icon-btn" onclick="deleteMid()" title="削除"><span class="material-symbols-outlined">delete</span></button>
+                </div>
+                <div class="nav-group">
+                    小カテゴリ: 
+                    <select id="small-select" onchange="changeSmall()"></select>
+                    <button class="icon-btn" onclick="addSmall()" title="追加"><span class="material-symbols-outlined">add</span></button>
+                    <button class="icon-btn" onclick="renameSmall()" title="名前の変更"><span class="material-symbols-outlined">edit</span></button>
+                    <button class="icon-btn" onclick="deleteSmall()" title="削除"><span class="material-symbols-outlined">delete</span></button>
+                </div>
+            </div>
+            
+            <div class="sticky-note">
+                <div class="color-picker">
+                    <div class="color-dot" style="background-color: #fff9c4;" onclick="setNoteColor('#fff9c4')"></div>
+                    <div class="color-dot" style="background-color: #e3f2fd;" onclick="setNoteColor('#e3f2fd')"></div>
+                    <div class="color-dot" style="background-color: #e8f5e9;" onclick="setNoteColor('#e8f5e9')"></div>
+                    <div class="color-dot" style="background-color: #fce4ec;" onclick="setNoteColor('#fce4ec')"></div>
+                </div>
+                <div class="sticky-note-title">MEMO</div>
+                <textarea id="memo" placeholder="ちょっとしたメモ..."></textarea>
+            </div>
+
+            <input type="text" id="question" placeholder="質問を入力">
+            <textarea id="answer" placeholder="ここにカンペの本文がでる"></textarea>
+        </div>
+    </div>
+
+    <div class="fab-container">
+        <button class="fab add" onclick="addBig()" title="大タブ（大カテゴリ）を追加">
+            <span class="material-symbols-outlined">add</span>
+        </button>
+        <button class="fab edit" onclick="renameBig()" title="現在の大タブの名前を変更">
+            <span class="material-symbols-outlined">edit</span>
+        </button>
+        <button class="fab delete" onclick="deleteBig()" title="現在の大タブを削除">
+            <span class="material-symbols-outlined">delete</span>
+        </button>
+    </div>
+</body>
+</html>
