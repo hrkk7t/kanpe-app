@@ -447,10 +447,28 @@ body.dark-mode .tab.active {
 }
 
 .production-mode .fab-container,
-.production-mode .toolbar,
 .production-mode .hierarchy-nav,
 .production-mode .sticky-note {
     display: none !important;
+}
+
+.production-mode .toolbar {
+    border-bottom: none;
+    justify-content: flex-end;
+}
+
+.production-mode .toolbar .save-btn,
+.production-mode .toolbar .search-wrapper,
+.production-mode .toolbar .font-btn:not(#production-mode-btn) {
+    display: none !important;
+}
+
+.production-mode #question {
+    font-size: 2.0em !important; /* 本番モードで質問のフォントサイズを拡大 */
+}
+
+.production-mode #answer {
+    font-size: 1.6em !important; /* 本番モードで回答のフォントサイズを拡大 */
 }
 
 body.dark-mode .font-btn,

@@ -111,9 +111,17 @@ function toggleProductionMode() {
     });
 
     const icon = document.getElementById('production-icon');
-    icon.innerText = isProductionMode ? 'edit_note' : 'cast';
+    const button = document.getElementById('production-mode-btn');
     
-    showToast(isProductionMode ? "本番モードON（編集不可）" : "編集モードに戻りました");
+    if (isProductionMode) {
+        icon.innerText = 'edit_note';
+        button.title = '本番モードを解除（編集モードに戻る）';
+        showToast("本番モードON（編集不可）");
+    } else {
+        icon.innerText = 'cast';
+        button.title = '本番モード';
+        showToast("編集モードに戻りました");
+    }
 }
 
 function toggleStar() {
@@ -569,6 +577,10 @@ window.onload = () => {
         if ((e.ctrlKey || e.metaKey) && e.key === 's') {
             e.preventDefault();
             saveData();
+        }
+        // Escキーで本番モードを解除
+        if (e.key === 'Escape' && isProductionMode) {
+            toggleProductionMode();
         }
     });
 
