@@ -28,9 +28,13 @@ function updateAllUI() {
 }
 
 function renderContent() {
-    document.getElementById('question').value = appData[currentBig][currentMid][currentSmall].question;
+    const questionInput = document.getElementById('question');
+    questionInput.value = appData[currentBig][currentMid][currentSmall].question;
     document.getElementById('answer').value = appData[currentBig][currentMid][currentSmall].answer;
     document.getElementById('memo').value = appData[currentBig][currentMid][currentSmall].memo || "";
+    
+    // 質問欄の高さを内容に合わせて調整
+    autoResizeQuestion();
     
     const note = document.querySelector('.sticky-note');
     note.style.top = appData[currentBig][currentMid][currentSmall].top || "80px";
@@ -40,6 +44,12 @@ function renderContent() {
     setNoteColor(appData[currentBig][currentMid][currentSmall].color || "#fff9c4");
     // 現在のフォントサイズ設定を適用
     applyFontSize();
+}
+
+function autoResizeQuestion() {
+    const el = document.getElementById('question');
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
 }
 
 function saveCurrentInput() {
@@ -163,7 +173,78 @@ function renderSmallSelect() {
 }
 
 function renderBreadcrumb() {
-    document.getElementById('breadcrumb').innerText = `${currentBig} ＞ ${currentMid} ＞ ${currentSmall}`;
+    const container = document.getElementById('breadcrumb');
+    container.innerHTML = "";
+    
+    const createSpan = (text, onClickHandler) => {
+        const span = document.createElement('span');
+        span.innerText = text;
+        span.onclick = (e) => onClickHandler(e);
+        return span;
+    };
+
+    container.appendChild(createSpan(currentBig, (e) => showBreadcrumbPopup(e, 'mid')));
+    container.appendChild(document.createTextNode(' ＞ '));
+    container.appendChild(createSpan(currentMid, (e) => showBreadcrumbPopup(e, 'small')));
+    container.appendChild(document.createTextNode(' ＞ '));
+    container.appendChild(createSpan(currentSmall, () => document.getElementById('small-select').focus()));
+}
+
+function showBreadcrumbPopup(event, type) {
+    // 既存のポップアップを削除
+    const existing = document.getElementById('breadcrumb-popup');
+    if (existing) existing.remove();
+
+    const popup = document.createElement('div');
+    popup.id = 'breadcrumb-popup';
+    popup.className = 'breadcrumb-popup';
+    
+    let items = [];
+    let currentActive = "";
+    let onSelect = null;
+
+    if (type === 'mid') {
+        items = Object.keys(appData[currentBig]);
+        currentActive = currentMid;
+        onSelect = (val) => {
+            currentMid = val;
+            currentSmall = Object.keys(appData[currentBig][val])[0];
+        };
+    } else {
+        items = Object.keys(appData[currentBig][currentMid]);
+        currentActive = currentSmall;
+        onSelect = (val) => {
+            currentSmall = val;
+        };
+    }
+
+    items.forEach(val => {
+        const item = document.createElement('div');
+        item.className = 'popup-item' + (val === currentActive ? ' active' : '');
+        item.innerText = val;
+        item.onclick = (e) => {
+            e.stopPropagation();
+            saveCurrentInput();
+            onSelect(val);
+            updateAllUI();
+            popup.remove();
+        };
+        popup.appendChild(item);
+    });
+
+    document.body.appendChild(popup);
+    popup.style.left = event.pageX + 'px';
+    popup.style.top = (event.pageY + 10) + 'px';
+
+    // ポップアップの外側をクリックしたら閉じる設定
+    setTimeout(() => {
+        window.addEventListener('click', function closePopup(e) {
+            if (!popup.contains(e.target)) {
+                popup.remove();
+                window.removeEventListener('click', closePopup);
+            }
+        }, { once: true });
+    }, 0);
 }
 
 function changeMid() {
@@ -281,4 +362,7 @@ window.onload = () => {
         const icon = document.getElementById('dark-mode-icon');
         if (icon) icon.innerText = 'light_mode';
     }
+    
+    // 質問入力時にも高さを自動調整
+    document.getElementById('question').addEventListener('input', autoResizeQuestion);
 };
