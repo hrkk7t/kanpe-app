@@ -148,7 +148,7 @@ body.dark-mode .footer-logo {
     box-shadow: 0 15px 35px rgba(0,0,0,0.15);
     z-index: 3000;
     border: 1px solid rgba(41, 128, 185, 0.3);
-    transition: all 0.3s ease;
+    transition: opacity 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 body.dark-mode .timer-panel {
@@ -200,6 +200,12 @@ body.dark-mode .timer-target-section { background: #333; }
     gap: 4px;
     margin-bottom: 8px;
     justify-content: center;
+}
+
+/* タイマー動作中は設定項目を非表示にしてスマートにする */
+.timer-panel.timer-running .timer-target-section,
+.timer-panel.timer-running .timer-presets {
+    display: none;
 }
 
 .timer-target-adjust {

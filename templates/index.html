@@ -48,9 +48,7 @@
                 </button>
             </div>
 
-            <div id="breadcrumb" class="breadcrumb">
-                大 ＞ 中 ＞ 小
-            </div>
+            <div id="breadcrumb" class="breadcrumb"></div>
 
             <div class="hierarchy-nav">
                 <div class="nav-group">
@@ -77,18 +75,18 @@
                     <div class="color-dot" style="background-color: #fce4ec;" onclick="setNoteColor('#fce4ec')"></div>
                 </div>
                 <div class="sticky-note-title">MEMO</div>
-                <textarea id="memo" placeholder="ちょっとしたメモ..."></textarea>
+                <textarea id="memo" placeholder=""></textarea>
             </div>
 
             <div style="display: flex; align-items: flex-start; gap: 10px;">
                 <button id="star-btn" class="icon-btn" onclick="toggleStar()" title="重要マーク" style="margin-top: 5px; border: none; background: transparent;">
                     <span class="material-symbols-outlined" id="star-icon">star</span>
                 </button>
-                <textarea id="question" placeholder="質問を入力" rows="1"></textarea>
+                <textarea id="question" placeholder="" rows="1"></textarea>
             </div>
             
             <div style="position: relative;">
-                <textarea id="answer" placeholder="ここにカンペの本文がでる"></textarea>
+                <textarea id="answer" placeholder="ここに回答を入力してください..."></textarea>
                 <div id="practice-overlay" class="practice-overlay">
                     <button onclick="revealAnswer()" class="save-btn">答えを確認する</button>
                 </div>

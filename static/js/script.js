@@ -26,6 +26,64 @@ async function loadData() {
         currentSmall = smallKeys[0];
         updateAllUI();
     }
+
+    // --- Apply specific initializations for "志望動機" and "自己PR" ---
+    // This ensures their structure and initial content are always as specified,
+    // overwriting any previously saved data for these specific big categories.
+
+    // 志望動機
+    const shibouDoukiBigKey = "志望動機";
+    const shibouDoukiMidKey = "業界について";
+    const shibouDoukiSmallKey = "基本";
+    appData[shibouDoukiBigKey] = { // Overwrite or create "志望動機"
+        [shibouDoukiMidKey]: {
+            [shibouDoukiSmallKey]: {
+                question: "志望動機を教えてください。",
+                answer: "",
+                memo: "",
+                important: false,
+                color: "#fff9c4", // Default color
+                top: "80px", // Default position
+                left: "740px" // Default position
+            }
+        }
+    }
+
+    // 自己PR
+    const jikoPRBigKey = "自己PR";
+    const jikoPRMidKey = "強み"; // A reasonable default mid-category for 自己PR
+    const jikoPRSmallKey = "基本";
+    appData[jikoPRBigKey] = { // Overwrite or create "自己PR"
+        [jikoPRMidKey]: {
+            [jikoPRSmallKey]: {
+                question: "あなたの強みを教えてください。",
+                answer: "",
+                memo: "",
+                important: false,
+                color: "#fff9c4", // Default color
+                top: "80px", // Default position
+                left: "740px" // Default position
+            }
+        }
+    };
+    // --- End of specific initializations ---
+
+    // --- Set current active categories ---
+    const bigKeysAfterInit = Object.keys(appData);
+    if (bigKeysAfterInit.length > 0) {
+        // If current selection is invalid after overwrites, pick a new default
+        if (!appData[currentBig] || !appData[currentBig][currentMid] || !appData[currentBig][currentMid][currentSmall]) {
+            currentBig = bigKeysAfterInit[0];
+            currentMid = Object.keys(appData[currentBig])[0];
+            currentSmall = Object.keys(appData[currentBig][currentMid])[0];
+        }
+    } else {
+        // This case should ideally not happen if "志望動機" and "自己PR" are always created.
+        currentBig = shibouDoukiBigKey;
+        currentMid = shibouDoukiMidKey;
+        currentSmall = shibouDoukiSmallKey;
+    }
+    updateAllUI();
 }
 
 function updateAllUI() {
@@ -39,8 +97,8 @@ function updateAllUI() {
 function renderContent() {
     const questionInput = document.getElementById('question');
     const item = appData[currentBig][currentMid][currentSmall];
-    questionInput.value = item.question;
-    document.getElementById('answer').value = item.answer;
+    questionInput.value = item.question || "";
+    document.getElementById('answer').value = item.answer || "";
     document.getElementById('memo').value = item.memo || "";
     
     const starIcon = document.getElementById('star-icon');
@@ -143,11 +201,13 @@ function closeTimerModal(event) {
 
 function toggleTimer() {
     const btn = document.getElementById('modal-timer-toggle-btn');
+    const panel = document.getElementById('timer-modal');
     if (timerInterval) {
         clearInterval(timerInterval);
         timerInterval = null;
         showToast("タイマー停止");
         if (btn) btn.innerHTML = '<span class="material-symbols-outlined">play_arrow</span>';
+        if (panel) panel.classList.remove('timer-running');
     } else {
         timerInterval = setInterval(() => {
             timerSeconds++;
@@ -155,6 +215,7 @@ function toggleTimer() {
         }, 1000);
         showToast("タイマースタート");
         if (btn) btn.innerHTML = '<span class="material-symbols-outlined">pause</span>';
+        if (panel) panel.classList.add('timer-running');
     }
 }
 
@@ -165,6 +226,7 @@ function resetTimer() {
     updateTimerDisplay();
     const btn = document.getElementById('modal-timer-toggle-btn');
     if (btn) btn.innerHTML = '<span class="material-symbols-outlined">play_arrow</span>';
+    document.getElementById('timer-modal').classList.remove('timer-running');
     showToast("タイマーをリセットしました");
 }
 
@@ -361,19 +423,33 @@ function initDraggable() {
         offsetX = e.clientX - note.offsetLeft;
         offsetY = e.clientY - note.offsetTop;
         note.style.opacity = '0.7';
+        note.style.transition = 'none';
     });
 
     document.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
-        note.style.left = (e.clientX - offsetX) + 'px';
-        note.style.top = (e.clientY - offsetY) + 'px';
-        note.style.right = 'auto';
+        requestAnimationFrame(() => {
+            if (!isDragging) return;
+            let x = e.clientX - offsetX;
+            let y = e.clientY - offsetY;
+
+            // 画面外に出ないように制限
+            const maxX = window.innerWidth - note.offsetWidth;
+            const maxY = window.innerHeight - note.offsetHeight;
+            x = Math.max(0, Math.min(x, maxX));
+            y = Math.max(0, Math.min(y, maxY));
+
+            note.style.left = x + 'px';
+            note.style.top = y + 'px';
+            note.style.right = 'auto';
+        });
     });
 
     document.addEventListener('mouseup', () => {
         if (isDragging) {
             isDragging = false;
             note.style.opacity = '1.0';
+            note.style.transition = '';
             saveCurrentInput();
         }
     });
@@ -392,21 +468,35 @@ function initTimerDraggable() {
         offsetX = e.clientX - panel.offsetLeft;
         offsetY = e.clientY - panel.offsetTop;
         panel.style.opacity = '0.8';
+        panel.style.transition = 'none';
     });
 
     document.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
-        // パネルの位置を更新（fixedの制約を解除するためにbottomをautoにする）
-        panel.style.left = (e.clientX - offsetX) + 'px';
-        panel.style.top = (e.clientY - offsetY) + 'px';
-        panel.style.bottom = 'auto';
-        panel.style.right = 'auto';
+        requestAnimationFrame(() => {
+            if (!isDragging) return;
+            let x = e.clientX - offsetX;
+            let y = e.clientY - offsetY;
+
+            // 画面外に出ないように制限
+            const maxX = window.innerWidth - panel.offsetWidth;
+            const maxY = window.innerHeight - panel.offsetHeight;
+            x = Math.max(0, Math.min(x, maxX));
+            y = Math.max(0, Math.min(y, maxY));
+
+            // パネルの位置を更新（fixedの制約を解除するためにbottomをautoにする）
+            panel.style.left = x + 'px';
+            panel.style.top = y + 'px';
+            panel.style.bottom = 'auto';
+            panel.style.right = 'auto';
+        });
     });
 
     document.addEventListener('mouseup', () => {
         if (isDragging) {
             isDragging = false;
             panel.style.opacity = '1.0';
+            panel.style.transition = '';
         }
     });
 }
@@ -630,27 +720,30 @@ function changeSmall() {
 function addBig() {
     const name = prompt("新しい大タブの名前:");
     if (name && !appData[name]) {
-        appData[name] = { "新規中カテゴリ": { "新規小カテゴリ": { "question": "", "answer": "" } } };
+        appData[name] = { "新規中カテゴリ": { "新規小カテゴリ": { "question": "", "answer": "", "memo": "" } } };
         currentBig = name; currentMid = "新規中カテゴリ"; currentSmall = "新規小カテゴリ";
         updateAllUI();
+        document.getElementById('question').focus();
     }
 }
 
 function addMid() {
     const name = prompt("新しい中カテゴリの名前:");
     if (name && !appData[currentBig][name]) {
-        appData[currentBig][name] = { "新規小カテゴリ": { "question": "", "answer": "" } };
+        appData[currentBig][name] = { "新規小カテゴリ": { "question": "", "answer": "", "memo": "" } };
         currentMid = name; currentSmall = "新規小カテゴリ";
         updateAllUI();
+        document.getElementById('question').focus();
     }
 }
 
 function addSmall() {
     const name = prompt("新しい小カテゴリの名前:");
     if (name && !appData[currentBig][currentMid][name]) {
-        appData[currentBig][currentMid][name] = { "question": "", "answer": "" };
+        appData[currentBig][currentMid][name] = { "question": "", "answer": "", "memo": "" };
         currentSmall = name;
         updateAllUI();
+        document.getElementById('question').focus();
     }
 }
 
