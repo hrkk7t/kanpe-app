@@ -878,27 +878,50 @@ body.dark-mode .search-item .item-text { color: #eee; }
     body {
         background-color: white;
         padding: 0;
+        margin: 0;
     }
     .outer-container {
         box-shadow: none;
         width: 100%;
         max-width: none;
         background-color: white;
+        padding: 0;
+        border: none;
     }
-    .tabs, .toolbar, .hierarchy-nav, .fab-container, #star-btn, .color-picker, .sticky-note-title, #char-count, .practice-overlay {
+    /* 不要な要素（メモ、ボタン類、タイマー等）をすべて非表示にする */
+    .tabs, .toolbar, .hierarchy-nav, .fab-container, #star-btn, 
+    .sticky-note, .breadcrumb, .timer-panel, .modal-overlay, 
+    .card-footer, .practice-overlay, .color-picker {
         display: none !important;
     }
     .card {
         background-image: none;
-        padding: 0;
-    }
-    #question, #answer, #memo {
+        padding: 40px;
+        box-shadow: none;
         border: none;
-        color: black !important;
     }
-    .sticky-note {
-        position: static;
-        transform: none;
-        border: 1px solid #ccc;
+    /* 質問と回答のテキストエリアを印刷用にテキストとして整形 */
+    #question, #answer {
+        border: none !important;
+        color: #000 !important;
+        background: transparent !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        resize: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    #question {
+        font-size: 24pt !important;
+        font-weight: bold !important;
+        margin-bottom: 30px !important;
+        border-bottom: 2px solid #333 !important;
+        padding-bottom: 10px !important;
+    }
+    #answer {
+        font-size: 14pt !important;
+        line-height: 1.8 !important;
+        white-space: pre-wrap !important;
     }
 }
