@@ -914,28 +914,42 @@ body.dark-mode .template-desc { color: #bbb; }
         display: none !important;
     }
 
+    body {
+        display: block; /* Flex解除で余計なスクロール（余白）計算を抑制 */
+        padding: 0;
+        margin: 0;
+        height: auto;
+    }
+
     #mobile-edit-btn {
         display: inline-flex;
     }
 
-    /* スマホ閲覧モード時は編集系ボタンを隠す */
+    /* スマホ閲覧モード時は編集系ボタン（保存・フォルダ/項目の操作・FABの追加/編集/削除）を隠す */
     body:not(.mobile-edit-active) .hierarchy-nav .icon-btn,
+    body:not(.mobile-edit-active) .save-btn,
     body:not(.mobile-edit-active) .fab.add,
     body:not(.mobile-edit-active) .fab.edit,
     body:not(.mobile-edit-active) .fab.delete {
         display: none !important;
     }
 
+    /* スマホ編集モードONの時に表示を確実に強制 */
+    body.mobile-edit-active .save-btn,
+    body.mobile-edit-active .hierarchy-nav .icon-btn {
+        display: flex !important;
+    }
+
     .toolbar {
         flex-wrap: wrap;
-        gap: 4px;
+        gap: 8px;
     }
     .toolbar > div {
         flex-wrap: wrap;
-        gap: 4px !important;
+        gap: 6px !important;
     }
     .font-btn {
-        padding: 4px 6px;
+        padding: 6px 10px;
     }
 
     .toolbar .save-btn {
@@ -947,6 +961,7 @@ body.dark-mode .template-desc { color: #bbb; }
         padding: 5px;
         border-radius: 8px;
         min-height: auto;
+        margin: 0;
     }
 
     .mobile-font-slider {
@@ -1024,11 +1039,14 @@ body.dark-mode .template-desc { color: #bbb; }
     }
     .tab { padding: 6px 12px; font-size: 0.8em; }
     .sticky-note {
-        position: relative;
+        position: relative !important;
         width: 100%;
         transform: none;
         margin-bottom: 20px;
         box-sizing: border-box;
+        left: 0 !important;
+        top: 0 !important;
+        right: auto !important;
     }
 
     .sticky-note .color-picker {
