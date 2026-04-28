@@ -726,8 +726,23 @@ async function saveData(isAuto = false) {
         body: JSON.stringify(appData)
     });
 
-    if (response.ok && !isAuto) {
-        showToast("保存しました！");
+    if (response.ok) {
+        if (!isAuto) {
+            showToast("保存しました！");
+        } else {
+            showAutoSaveIndicator();
+        }
+    }
+}
+
+function showAutoSaveIndicator() {
+    const status = document.getElementById('autosave-status');
+    if (status) {
+        status.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;">cloud_done</span> 自動保存済み';
+        status.classList.add('visible');
+        setTimeout(() => {
+            status.classList.remove('visible');
+        }, 2000);
     }
 }
 

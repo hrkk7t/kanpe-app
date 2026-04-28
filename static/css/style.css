@@ -647,6 +647,23 @@ body.dark-mode .practice-overlay { background-color: rgba(30, 30, 30, 0.95); }
     animation: toast-in 0.3s ease-out, toast-out 0.3s ease-in 2.7s forwards;
 }
 
+/* --- 自動保存ステータス --- */
+.autosave-status {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    font-size: 0.7em;
+    color: #2ecc71;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    z-index: 10000;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.autosave-status.visible { opacity: 1; }
+
 @keyframes toast-in {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
