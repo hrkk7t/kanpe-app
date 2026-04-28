@@ -891,7 +891,7 @@ body.dark-mode .search-item .item-text { color: #eee; }
     /* 不要な要素（メモ、ボタン類、タイマー等）をすべて非表示にする */
     .tabs, .toolbar, .hierarchy-nav, .fab-container, #star-btn, 
     .sticky-note, .breadcrumb, .timer-panel, .modal-overlay, 
-    .card-footer, .practice-overlay, .color-picker {
+    .card-footer, .practice-overlay, .color-picker, #toast-container {
         display: none !important;
     }
     .card {
@@ -907,7 +907,7 @@ body.dark-mode .search-item .item-text { color: #eee; }
         background: transparent !important;
         width: 100% !important;
         height: auto !important;
-        overflow: visible !important;
+        overflow: hidden !important;
         resize: none !important;
         padding: 0 !important;
         margin: 0 !important;
