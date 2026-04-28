@@ -7,6 +7,12 @@ let currentNoteColor = "#fff9c4";
 let isPracticeMode = false;
 let isFilterActive = false;
 let isProductionMode = false;
+let timerInterval = null;
+let timerSeconds = 0;
+let scrollInterval = null;
+let isScrolling = false;
+let touchStartX = 0;
+let touchStartY = 0;
 
 async function loadData() {
     const response = await fetch('/api/data');
@@ -104,11 +110,7 @@ function findFirstImportant() {
 function toggleProductionMode() {
     isProductionMode = !isProductionMode;
     document.body.classList.toggle('production-mode', isProductionMode);
-    
-    const fields = ['question', 'answer', 'memo'];
-    fields.forEach(id => {
-        document.getElementById(id).readOnly = isProductionMode;
-    });
+    updateInputState();
 
     const icon = document.getElementById('production-icon');
     const button = document.getElementById('production-mode-btn');
@@ -128,6 +130,174 @@ function toggleStar() {
     const item = appData[currentBig][currentMid][currentSmall];
     item.important = !item.important;
     renderContent();
+}
+
+// --- タイマー機能 ---
+function openTimerModal() {
+    document.getElementById('timer-modal').style.display = 'block';
+}
+
+function closeTimerModal(event) {
+    document.getElementById('timer-modal').style.display = 'none';
+}
+
+function toggleTimer() {
+    const btn = document.getElementById('modal-timer-toggle-btn');
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        showToast("タイマー停止");
+        if (btn) btn.innerHTML = '<span class="material-symbols-outlined">play_arrow</span>';
+    } else {
+        timerInterval = setInterval(() => {
+            timerSeconds++;
+            updateTimerDisplay();
+        }, 1000);
+        showToast("タイマースタート");
+        if (btn) btn.innerHTML = '<span class="material-symbols-outlined">pause</span>';
+    }
+}
+
+function resetTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    timerSeconds = 0;
+    updateTimerDisplay();
+    const btn = document.getElementById('modal-timer-toggle-btn');
+    if (btn) btn.innerHTML = '<span class="material-symbols-outlined">play_arrow</span>';
+    showToast("タイマーをリセットしました");
+}
+
+function adjustTarget(type, delta) {
+    const minInput = document.getElementById('target-min');
+    const secInput = document.getElementById('target-sec');
+    if (type === 'min') {
+        minInput.value = Math.max(0, (parseInt(minInput.value) || 0) + delta);
+    } else {
+        let currentSec = (parseInt(secInput.value) || 0) + delta;
+        if (currentSec < 0) currentSec = 0;
+        if (currentSec >= 60) currentSec = 59;
+        secInput.value = currentSec;
+    }
+    updateTimerDisplay();
+}
+
+function setTargetPreset(min, sec) {
+    document.getElementById('target-min').value = min;
+    document.getElementById('target-sec').value = sec;
+    updateTimerDisplay();
+}
+
+function updateTimerDisplay() {
+    const min = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+    const sec = (timerSeconds % 60).toString().padStart(2, '0');
+    
+    const display = document.getElementById('modal-timer-display');
+    if (display) {
+        display.innerText = `${min}:${sec}`;
+        
+        // 目標時間のチェック
+        const targetMin = parseInt(document.getElementById('target-min').value) || 0;
+        const targetSec = parseInt(document.getElementById('target-sec').value) || 0;
+        const totalTargetSeconds = (targetMin * 60) + targetSec;
+
+        if (totalTargetSeconds > 0 && timerSeconds >= totalTargetSeconds) {
+            display.classList.add('over-time');
+        } else {
+            display.classList.remove('over-time');
+        }
+    }
+}
+
+// --- 自動スクロール機能 ---
+function toggleAutoScroll() {
+    const textarea = document.getElementById('answer');
+    const icon = document.getElementById('scroll-icon');
+    
+    if (isScrolling) {
+        clearInterval(scrollInterval);
+        isScrolling = false;
+        icon.innerText = 'south';
+        showToast("スクロール停止");
+    } else {
+        isScrolling = true;
+        icon.innerText = 'pause';
+        showToast("自動スクロール開始");
+        scrollInterval = setInterval(() => {
+            // 1pxずつ下にスクロール
+            textarea.scrollTop += 1;
+            
+            // 下端まで行ったら停止
+            if (textarea.scrollTop + textarea.clientHeight >= textarea.scrollHeight) {
+                clearInterval(scrollInterval);
+                isScrolling = false;
+                icon.innerText = 'south';
+            }
+        }, 50); // 速度調整（50msごとに1px）
+    }
+}
+
+// --- スワイプジェスチャー（スマホ用） ---
+function initSwipeEvents() {
+    const card = document.querySelector('.card');
+    if (!card) return;
+
+    card.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    card.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].screenX;
+        const touchEndY = e.changedTouches[0].screenY;
+        handleSwipe(touchStartX, touchStartY, touchEndX, touchEndY);
+    }, { passive: true });
+}
+
+function handleSwipe(startX, startY, endX, endY) {
+    const diffX = startX - endX;
+    const diffY = startY - endY;
+    
+    // 横方向の移動が縦方向より大きく、かつ一定以上の距離(70px)がある場合のみ実行
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 70) {
+        let smallKeys = Object.keys(appData[currentBig][currentMid]);
+        if (isFilterActive) {
+            smallKeys = smallKeys.filter(s => appData[currentBig][currentMid][s].important);
+        }
+        
+        const currentIndex = smallKeys.indexOf(currentSmall);
+        
+        if (diffX > 0) {
+            // 左スワイプ -> 次の小カテゴリへ
+            if (currentIndex < smallKeys.length - 1) {
+                saveCurrentInput();
+                currentSmall = smallKeys[currentIndex + 1];
+                updateAllUI();
+            }
+        } else {
+            // 右スワイプ -> 前の小カテゴリへ
+            if (currentIndex > 0) {
+                saveCurrentInput();
+                currentSmall = smallKeys[currentIndex - 1];
+                updateAllUI();
+            }
+        }
+    }
+}
+
+function printData() {
+    window.print();
+}
+
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+        showToast("全画面モードON");
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
 }
 
 function updateCharCount() {
@@ -180,6 +350,8 @@ function showToast(message) {
 }
 
 function initDraggable() {
+    if (window.innerWidth <= 600) return; // スマホではドラッグ無効
+
     const note = document.querySelector('.sticky-note');
     const handle = document.querySelector('.sticky-note-title');
     let isDragging = false, offsetX, offsetY;
@@ -207,6 +379,38 @@ function initDraggable() {
     });
 }
 
+function initTimerDraggable() {
+    if (window.innerWidth <= 600) return; // スマホではドラッグ無効
+
+    const panel = document.getElementById('timer-modal');
+    const header = panel.querySelector('.timer-header');
+    let isDragging = false, offsetX, offsetY;
+
+    header.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        // 現在のパネル位置とマウス位置の差分を保持
+        offsetX = e.clientX - panel.offsetLeft;
+        offsetY = e.clientY - panel.offsetTop;
+        panel.style.opacity = '0.8';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        // パネルの位置を更新（fixedの制約を解除するためにbottomをautoにする）
+        panel.style.left = (e.clientX - offsetX) + 'px';
+        panel.style.top = (e.clientY - offsetY) + 'px';
+        panel.style.bottom = 'auto';
+        panel.style.right = 'auto';
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            panel.style.opacity = '1.0';
+        }
+    });
+}
+
 function toggleDarkMode() {
     const body = document.body;
     body.classList.toggle('dark-mode');
@@ -221,9 +425,16 @@ function changeFontSize(step) {
     applyFontSize();
 }
 
+function handleSliderChange(val) {
+    currentFontSize = parseFloat(val);
+    applyFontSize();
+}
+
 function applyFontSize() {
     document.getElementById('question').style.fontSize = (currentFontSize + 0.2) + "em";
     document.getElementById('answer').style.fontSize = currentFontSize + "em";
+    const slider = document.getElementById('font-slider');
+    if (slider) slider.value = currentFontSize;
 }
 
 function setNoteColor(color) {
@@ -510,10 +721,23 @@ async function resetAllData() {
     }
 }
 
+function openSearchModal() {
+    const modal = document.getElementById('search-modal');
+    modal.style.display = 'flex';
+    const input = document.getElementById('modal-search-input');
+    input.value = "";
+    input.focus();
+    document.getElementById('modal-search-results').innerHTML = "";
+}
+
+function closeSearchModal(event) {
+    document.getElementById('search-modal').style.display = 'none';
+}
+
 function handleSearch(query) {
-    const resultsContainer = document.getElementById('search-results');
+    const resultsContainer = document.getElementById('modal-search-results');
     if (!query) {
-        resultsContainer.classList.remove('active');
+        resultsContainer.innerHTML = "";
         return;
     }
 
@@ -535,7 +759,6 @@ function handleSearch(query) {
 
     resultsContainer.innerHTML = "";
     if (results.length > 0) {
-        resultsContainer.classList.add('active');
         results.forEach(res => {
             const div = document.createElement('div');
             div.className = 'search-item';
@@ -549,19 +772,21 @@ function handleSearch(query) {
                 currentMid = res.mid;
                 currentSmall = res.small;
                 updateAllUI();
-                resultsContainer.classList.remove('active');
-                document.getElementById('search-input').value = "";
+                closeSearchModal();
             };
             resultsContainer.appendChild(div);
         });
-    } else {
-        resultsContainer.classList.remove('active');
     }
 }
 
 window.onload = () => {
     loadData();
     initDraggable();
+    initTimerDraggable();
+    initSwipeEvents();
+    updateInputState();
+    updateCharCount();
+
     if (localStorage.getItem('dark-mode') === 'true') {
         document.body.classList.add('dark-mode');
         const icon = document.getElementById('dark-mode-icon');
@@ -571,6 +796,9 @@ window.onload = () => {
     // 質問入力時にも高さを自動調整
     document.getElementById('question').addEventListener('input', autoResizeQuestion);
     document.getElementById('answer').addEventListener('input', updateCharCount);
+
+    // 画面サイズ変更時に入力状態を再チェック
+    window.addEventListener('resize', updateInputState);
 
     // ショートカットキー設定
     window.addEventListener('keydown', (e) => {

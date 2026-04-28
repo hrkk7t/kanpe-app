@@ -872,8 +872,6 @@ body.dark-mode .search-item .item-text { color: #eee; }
     .timer-actions { margin-bottom: 0; gap: 5px; }
     .timer-btn { padding: 8px; }
 }
-    }
-}
 
 /* --- 印刷用設定 --- */
 @media print {

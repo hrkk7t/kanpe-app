@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scriptor</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
@@ -96,9 +97,6 @@
                 <div id="char-count" class="char-count">0 文字 (約 0秒)</div>
                 <button class="icon-btn scroll-btn" onclick="toggleAutoScroll()" title="自動スクロール">
                     <span class="material-symbols-outlined" id="scroll-icon" style="font-size: 18px;">south</span>
-                </button>
-                <button class="icon-btn paste-btn" onclick="pasteFromClipboard()" title="クリップボードから貼り付け">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">content_paste</span>
                 </button>
             </div>
         </div>
