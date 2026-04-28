@@ -552,6 +552,26 @@ function restoreFromArchive() {
 }
 
 function printData() {
+    const container = document.getElementById('print-all-container');
+    if (!container) return;
+
+    let html = "";
+    for (const big in appData) {
+        html += `<h1 class="print-big">${big}</h1>`;
+        for (const mid in appData[big]) {
+            html += `<h2 class="print-mid">${mid}</h2>`;
+            for (const small in appData[big][mid]) {
+                const item = appData[big][mid][small];
+                html += `
+                    <div class="print-item">
+                        <div class="print-question">${item.question || small}</div>
+                        <div class="print-answer">${item.answer || ""}</div>
+                    </div>
+                `;
+            }
+        }
+    }
+    container.innerHTML = html;
     window.print();
 }
 

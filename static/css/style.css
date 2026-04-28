@@ -159,6 +159,10 @@ body.dark-mode .footer-logo {
     gap: 5px;
 }
 
+.print-only {
+    display: none;
+}
+
 /* --- タイマーパネル（フローティング） --- */
 .timer-panel {
     position: fixed;
@@ -1100,52 +1104,33 @@ body.dark-mode .template-desc { color: #bbb; }
 /* --- 印刷用設定 --- */
 @media print {
     body {
-        background-color: white;
+        background-color: white !important;
+        display: block !important; /* flexボックスによる中央寄せを解除 */
+        text-align: left !important;
         padding: 0;
         margin: 0;
     }
-    .outer-container {
-        box-shadow: none;
-        width: 100%;
-        max-width: none;
-        background-color: white;
-        padding: 0;
-        border: none;
-    }
-    /* 不要な要素（メモ、ボタン類、タイマー等）をすべて非表示にする */
-    .tabs, .toolbar, .hierarchy-nav, .fab-container, #star-btn, 
-    .sticky-note, .breadcrumb, .timer-panel, .modal-overlay, 
-    .card-footer, .practice-overlay, .color-picker, #toast-container {
+    .outer-container, .fab-container, .modal-overlay, .timer-panel, #toast-container {
         display: none !important;
     }
-    .card {
-        background-image: none;
-        padding: 40px;
-        box-shadow: none;
-        border: none;
+    .print-only {
+        display: block !important;
+        width: 100%;
+        max-width: none;
+        padding: 0 10mm; /* 左右に適切な余白を確保 */
+        box-sizing: border-box;
     }
-    /* 質問と回答のテキストエリアを印刷用にテキストとして整形 */
-    #question, #answer {
-        border: none !important;
-        color: #000 !important;
-        background: transparent !important;
-        width: 100% !important;
-        height: auto !important;
-        overflow: hidden !important;
-        resize: none !important;
-        padding: 0 !important;
-        margin: 0 !important;
+    body::after {
+        content: "Created by Scriptor";
+        position: fixed;
+        bottom: 10mm;
+        right: 10mm;
+        font-size: 9pt;
+        color: #aaa;
     }
-    #question {
-        font-size: 24pt !important;
-        font-weight: bold !important;
-        margin-bottom: 30px !important;
-        border-bottom: 2px solid #333 !important;
-        padding-bottom: 10px !important;
-    }
-    #answer {
-        font-size: 14pt !important;
-        line-height: 1.8 !important;
-        white-space: pre-wrap !important;
-    }
+    .print-big { font-size: 22pt; border-bottom: 2px solid #333; margin-top: 30pt; padding-bottom: 5pt; }
+    .print-mid { font-size: 16pt; border-bottom: 1px solid #999; margin: 20pt 0 10pt 15pt; padding-bottom: 3pt; color: #555; }
+    .print-item { margin: 15pt 0 15pt 30pt; page-break-inside: avoid; border-left: 3px solid #eee; padding-left: 10pt; }
+    .print-question { font-weight: bold; font-size: 13pt; margin-bottom: 5pt; color: #2c3e50; }
+    .print-answer { font-size: 11pt; line-height: 1.6; white-space: pre-wrap; color: #333; }
 }

@@ -2,42 +2,42 @@
     "志望動機": {
         "業界について": {
             "なぜITか": {
-                "answer": "",
+                "question": "IT業界を選んだ理由は？",
+                "answer": "私がIT業界を志望する理由は...",
+                "memo": "情熱を伝える！",
                 "color": "#fff9c4",
-                "left": "740px",
-                "memo": "",
-                "question": "志望動機",
-                "top": "80px"
+                "top": "80px",
+                "left": "740px"
             },
             "他業界との比較": {
-                "answer": "はい、実は...",
-                "color": "#fff9c4",
-                "left": "740px",
-                "memo": "",
                 "question": "他の業界は見なかったのですか？",
-                "top": "80px"
+                "answer": "はい、実は...",
+                "memo": "",
+                "color": "#fff9c4",
+                "top": "80px",
+                "left": "740px"
             }
         },
         "自社について": {
             "なぜ当社か": {
-                "answer": "御社の〇〇という理念に共感し...",
-                "color": "#fff9c4",
-                "left": "740px",
-                "memo": "",
                 "question": "数ある中でなぜ当社ですか？",
-                "top": "80px"
+                "answer": "御社の〇〇という理念に共感し...",
+                "memo": "",
+                "color": "#fff9c4",
+                "top": "80px",
+                "left": "740px"
             }
         }
     },
     "自己PR": {
         "強み": {
             "継続力": {
-                "answer": "私の強みは継続力です。",
-                "color": "#fff9c4",
-                "left": "740px",
-                "memo": "具体的なエピソードを準備",
                 "question": "あなたの強みは何ですか？",
-                "top": "80px"
+                "answer": "私の強みは継続力です。",
+                "memo": "具体的なエピソードを準備",
+                "color": "#fff9c4",
+                "top": "80px",
+                "left": "740px"
             }
         }
     }
