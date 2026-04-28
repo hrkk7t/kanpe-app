@@ -41,11 +41,15 @@
                     <button class="font-btn" onclick="printData()" title="印刷・PDF保存"><span class="material-symbols-outlined">print</span></button>
                     <!-- 9. リセット -->
                     <button class="font-btn" onclick="resetAllData()" title="全てのデータをリセット"><span class="material-symbols-outlined" style="color: #e74c3c;">restart_alt</span></button>
+                    <!-- 10. バックアップ（ダウンロード） -->
+                    <button class="font-btn" onclick="exportData()" title="データをJSONとしてダウンロード"><span class="material-symbols-outlined">download</span></button>
                 </div>
-                <!-- 10. 保存 -->
-                <button class="save-btn" onclick="saveData()">
-                    <span class="material-symbols-outlined" style="font-size: 20px;">save</span> 保存
-                </button>
+                <div style="display: flex; gap: 5px;">
+                    <!-- 11. 保存 -->
+                    <button class="save-btn" onclick="saveData()">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">save</span> 保存
+                    </button>
+                </div>
             </div>
 
             <div id="breadcrumb" class="breadcrumb"></div>

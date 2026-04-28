@@ -351,6 +351,22 @@ function printData() {
     window.print();
 }
 
+/**
+ * 現在のデータをJSONファイルとしてダウンロードする
+ */
+function exportData() {
+    saveCurrentInput();
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    const date = new Date().toISOString().slice(0, 10);
+    downloadAnchorNode.setAttribute("download", `scriptor_backup_${date}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    showToast("バックアップを作成しました");
+}
+
 function toggleFullscreen() {
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen();
