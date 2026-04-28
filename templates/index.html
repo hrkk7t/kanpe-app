@@ -18,13 +18,6 @@
         <div class="card">
             <div class="toolbar">
                 <div style="display: flex; gap: 5px;">
-                    <!-- 1. 文字のズーム -->
-                    <button class="font-btn" onclick="changeFontSize(0.2)" title="文字を大きく"><span class="material-symbols-outlined">zoom_in</span></button>
-                    <button class="font-btn" onclick="changeFontSize(-0.2)" title="文字を小さく"><span class="material-symbols-outlined">zoom_out</span></button>
-                    <div class="mobile-font-slider">
-                        <span class="material-symbols-outlined" style="font-size: 18px; color: #666;">text_fields</span>
-                        <input type="range" id="font-slider" min="0.8" max="3.0" step="0.1" value="1.2" oninput="handleSliderChange(this.value)">
-                    </div>
                     <!-- 2. 練習モード -->
                     <button class="font-btn" onclick="togglePracticeMode()" title="練習モード"><span class="material-symbols-outlined" id="practice-icon">visibility_off</span></button>
                     <!-- 3. 本番モード -->
@@ -41,6 +34,10 @@
                     <button class="font-btn" onclick="printData()" title="印刷・PDF保存"><span class="material-symbols-outlined">print</span></button>
                     <!-- 9. リセット -->
                     <button class="font-btn" onclick="resetAllData()" title="全てのデータをリセット"><span class="material-symbols-outlined" style="color: #e74c3c;">restart_alt</span></button>
+                    <!-- スマホ用編集モード切替ボタン（PCではCSSで非表示） -->
+                    <button class="font-btn" id="mobile-edit-btn" onclick="toggleMobileEditMode()" title="スマホ編集モード切替"><span class="material-symbols-outlined" id="mobile-edit-icon">edit_off</span></button>
+                    <!-- 9.5 アーカイブ復元（ゴミ箱） -->
+                    <button class="font-btn" id="undo-btn" onclick="restoreFromArchive()" title="最後に削除/リセットしたデータを復元" style="display: none;"><span class="material-symbols-outlined">undo</span></button>
                     <!-- 10. バックアップ（ダウンロード） -->
                     <button class="font-btn" onclick="exportData()" title="データをJSONとしてダウンロード"><span class="material-symbols-outlined">download</span></button>
                 </div>
@@ -56,14 +53,14 @@
 
             <div class="hierarchy-nav">
                 <div class="nav-group">
-                    中カテゴリ: 
+                    フォルダ: 
                     <select id="mid-select" onchange="changeMid()"></select>
                     <button class="icon-btn" onclick="addMid()" title="追加"><span class="material-symbols-outlined">add</span></button>
                     <button class="icon-btn" onclick="renameMid()" title="名前の変更"><span class="material-symbols-outlined">edit</span></button>
                     <button class="icon-btn" onclick="deleteMid()" title="削除"><span class="material-symbols-outlined">delete</span></button>
                 </div>
                 <div class="nav-group">
-                    小カテゴリ: 
+                    項目: 
                     <select id="small-select" onchange="changeSmall()"></select>
                     <button class="icon-btn" onclick="addSmall()" title="追加"><span class="material-symbols-outlined">add</span></button>
                     <button class="icon-btn" onclick="renameSmall()" title="名前の変更"><span class="material-symbols-outlined">edit</span></button>
@@ -98,6 +95,14 @@
             <div class="card-footer">
                 <img src="{{ url_for('static', filename='logo.svg') }}" class="footer-logo" alt="logo">
                 <div class="footer-right">
+                    <div class="footer-font-controls">
+                        <button class="icon-btn" onclick="changeFontSize(-0.1)" title="小さく"><span class="material-symbols-outlined">text_decrease</span></button>
+                        <button class="icon-btn" onclick="changeFontSize(0.1)" title="大きく"><span class="material-symbols-outlined">text_increase</span></button>
+                    </div>
+                    <div class="speed-setting">
+                        速さ: <input type="number" id="speaking-speed" value="5" min="1" max="20" oninput="updateCharCount()"> 
+                        <span class="unit">字/秒</span>
+                    </div>
                     <div id="char-count" class="char-count">0 文字 (約 0秒)</div>
                     <button class="icon-btn scroll-btn" onclick="toggleAutoScroll()" title="自動スクロール">
                         <span class="material-symbols-outlined" id="scroll-icon" style="font-size: 18px;">south</span>
@@ -116,6 +121,9 @@
         </button>
         <button class="fab delete" onclick="deleteBig()" title="現在の大タブを削除">
             <span class="material-symbols-outlined">delete</span>
+        </button>
+        <button class="fab template-btn" onclick="openTemplateModal()" title="テンプレート集">
+            <span class="material-symbols-outlined">auto_awesome</span>
         </button>
         <button class="fab list-btn" onclick="openTocModal()" title="目次を表示">
             <span class="material-symbols-outlined">format_list_bulleted</span>
@@ -139,6 +147,14 @@
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-header">目次（全項目一覧）</div>
             <div id="toc-list-container" class="toc-list-container"></div>
+        </div>
+    </div>
+
+    <!-- テンプレート選択モーダル -->
+    <div id="template-modal" class="modal-overlay" onclick="closeTemplateModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">テンプレート・質問集</div>
+            <div id="template-list-container" class="template-list-container"></div>
         </div>
     </div>
 

@@ -7,6 +7,7 @@ let currentNoteColor = "#fff9c4";
 let isPracticeMode = false;
 let isFilterActive = false;
 let isProductionMode = false;
+let isMobileEditMode = false;
 let timerInterval = null;
 let timerSeconds = 0;
 let scrollInterval = null;
@@ -24,66 +25,221 @@ async function loadData() {
         currentMid = midKeys[0];
         const smallKeys = Object.keys(appData[currentBig][currentMid]);
         currentSmall = smallKeys[0];
-        updateAllUI();
     }
 
-    // --- Apply specific initializations for "志望動機" and "自己PR" ---
-    // This ensures their structure and initial content are always as specified,
-    // overwriting any previously saved data for these specific big categories.
-
-    // 志望動機
-    const shibouDoukiBigKey = "志望動機";
-    const shibouDoukiMidKey = "業界について";
-    const shibouDoukiSmallKey = "基本";
-    appData[shibouDoukiBigKey] = { // Overwrite or create "志望動機"
-        [shibouDoukiMidKey]: {
-            [shibouDoukiSmallKey]: {
-                question: "志望動機を教えてください。",
-                answer: "",
-                memo: "",
-                important: false,
-                color: "#fff9c4", // Default color
-                top: "80px", // Default position
-                left: "740px" // Default position
-            }
-        }
-    }
-
-    // 自己PR
-    const jikoPRBigKey = "自己PR";
-    const jikoPRMidKey = "強み"; // A reasonable default mid-category for 自己PR
-    const jikoPRSmallKey = "基本";
-    appData[jikoPRBigKey] = { // Overwrite or create "自己PR"
-        [jikoPRMidKey]: {
-            [jikoPRSmallKey]: {
-                question: "あなたの強みを教えてください。",
-                answer: "",
-                memo: "",
-                important: false,
-                color: "#fff9c4", // Default color
-                top: "80px", // Default position
-                left: "740px" // Default position
-            }
-        }
-    };
-    // --- End of specific initializations ---
-
-    // --- Set current active categories ---
-    const bigKeysAfterInit = Object.keys(appData);
-    if (bigKeysAfterInit.length > 0) {
-        // If current selection is invalid after overwrites, pick a new default
-        if (!appData[currentBig] || !appData[currentBig][currentMid] || !appData[currentBig][currentMid][currentSmall]) {
-            currentBig = bigKeysAfterInit[0];
-            currentMid = Object.keys(appData[currentBig])[0];
-            currentSmall = Object.keys(appData[currentBig][currentMid])[0];
-        }
-    } else {
-        // This case should ideally not happen if "志望動機" and "自己PR" are always created.
-        currentBig = shibouDoukiBigKey;
-        currentMid = shibouDoukiMidKey;
-        currentSmall = shibouDoukiSmallKey;
+    // --- テンプレートの初期化 ---
+    // データが完全に空（新規ユーザー）の場合のみ、デフォルトのテンプレートを作成します。
+    // これにより、ユーザーが削除した項目がリロード時に勝手に復活するのを防ぎます。
+    if (bigKeys.length === 0) {
+        setupDefaultTemplates();
     }
     updateAllUI();
+}
+
+function applyTemplates() {
+    if (confirm("既存のデータにテンプレートを追加しますか？（同名のタブがある場合は上書きされません）")) {
+        setupDefaultTemplates();
+        saveData();
+    }
+}
+
+function setupDefaultTemplates() {
+    // 初期起動時に自動で追加されるテンプレート
+    addTemplateToTabs("面接：基本質問セット");
+    addTemplateToTabs("面接：自己PR");
+    addTemplateToTabs("面接：ガクチカ深掘り");
+    addTemplateToTabs("面接：志望動機");
+    addTemplateToTabs("面接：頻出質問50選(抜粋)");
+    addTemplateToTabs("面接：逆質問");
+    addTemplateToTabs("プレゼン：構成案テンプレート");
+
+    // 初期表示するカテゴリを設定
+    currentBig = "自己分析";
+    currentMid = "導入";
+    currentSmall = "自己紹介";
+}
+
+/**
+ * テンプレートライブラリの定義
+ */
+const templateLibrary = {
+    "面接：基本質問セット": {
+        desc: "自己紹介、強み、挫折経験など必須項目",
+        data: {
+            "自己分析": {
+                "導入": {
+                    "自己紹介": { question: "1分間で自己紹介をしてください。", answer: "", placeholder: "1.氏名 2.大学 3.注力した事 4.本日の意気込み", memo: "1分以内に収める", important: true },
+                },
+                "性格・価値観": {
+                    "周囲からの評価": { question: "周囲からどのような人だと言われますか？", answer: "", placeholder: "具体的なエピソードを交えて", memo: "" },
+                    "挫折経験": { question: "これまでの人生で一番の挫折は何ですか？", answer: "", placeholder: "1.状況 2.困難だった点 3.どう乗り越えたか 4.学んだこと", memo: "STAR法で話す" }
+                }
+            }
+        }
+    },
+    "面接：自己PR": {
+        desc: "あなたの強みを効果的に伝える構成",
+        data: {
+            "自己PR": {
+                "強み": { question: "あなたの強みを教えてください。", answer: "", placeholder: "結論（強み）→具体的なエピソード→仕事への活かし方", memo: "企業が求める人物像と結びつける", important: true },
+                "弱み": { question: "あなたの弱みは何ですか？", answer: "", placeholder: "結論（弱み）→具体的なエピソード→改善策", memo: "改善策まで話す" }
+            }
+        }
+    },
+    "面接：ガクチカ深掘り": {
+        desc: "学生時代に力を入れたことのSTAR構成",
+        data: {
+            "ガクチカ": {
+                "メインエピソード": { question: "学生時代に最も力を入れたことは？", answer: "", placeholder: "S:状況 T:課題 A:行動 R:結果", memo: "数字を使うと説得力UP", important: true },
+                "苦労した点": { question: "取り組む中で一番苦労したことは？", answer: "", placeholder: "直面した壁→試行錯誤→得られた成果", memo: "" },
+                "学び": { question: "その経験から何を学びましたか？", answer: "", placeholder: "入社後どう活かせるか", memo: "" }
+            }
+        }
+    },
+    "面接：志望動機": {
+        desc: "企業への熱意を伝えるための構成",
+        data: {
+            "志望動機": {
+                "業界・企業": {
+                    "業界理由": { question: "なぜこの業界を志望しているのですか？", answer: "", placeholder: "業界の魅力→将来性", memo: "" },
+                    "弊社である理由": { question: "数ある企業の中で、なぜ弊社なのですか？", answer: "", placeholder: "他社との比較→共感した点→自分のビジョンとの重なり", memo: "競合他社との比較を明確に", important: true },
+                    "職種理由": { question: "なぜこの職種を希望するのですか？", answer: "", placeholder: "職種の魅力→自分の適性", memo: "" }
+                },
+                "キャリアビジョン": {
+                    "5年後の姿": { question: "5年後、弊社でどのような活躍をしていたいですか？", answer: "", placeholder: "具体的な目標→そこに至るまでのステップ", memo: "" },
+                    "入社後にやりたいこと": { question: "入社してまず挑戦したいことは何ですか？", answer: "", placeholder: "具体的な業務内容と貢献", memo: "" }
+                }
+            }
+        }
+    },
+    "面接：頻出質問50選(抜粋)": {
+        desc: "面接でよく聞かれる質問を網羅",
+        data: {
+            "頻出質問": {
+                "企業研究": {
+                    "入社後": { question: "入社後にやりたいことは？", answer: "", placeholder: "具体的な業務内容と貢献", memo: "" },
+                    "貢献": { question: "弊社にどう貢献できますか？", answer: "", placeholder: "自分の強みと経験をどう活かすか", memo: "" },
+                    "他社選考": { question: "他に選考を受けている企業は？", answer: "", placeholder: "正直に答えつつ、軸がぶれていないことを強調", memo: "" }
+                },
+                "自己理解": {
+                    "成功体験": { question: "成功体験を教えてください。", answer: "", placeholder: "STAR法で具体的に", memo: "" },
+                    "失敗体験": { question: "失敗体験を教えてください。", answer: "", placeholder: "失敗から何を学び、どう改善したか", memo: "" },
+                    "ストレス": { question: "ストレス解消法は？", answer: "", placeholder: "健全な方法を具体的に", memo: "" }
+                },
+                "キャリア": {
+                    "転勤": { question: "転勤は可能ですか？", answer: "", placeholder: "基本的には可能と答える", memo: "" },
+                    "残業": { question: "残業についてどう思いますか？", answer: "", placeholder: "業務効率化への意識を伝える", memo: "" }
+                }
+            }
+        }
+    },
+    "面接：逆質問": {
+        desc: "面接官への効果的な逆質問集",
+        data: {
+            "逆質問": {
+                "企業理解": {
+                    "活躍する人物像": { question: "御社で活躍している方に共通する素養は何ですか？", answer: "", placeholder: "入社後のイメージを具体化", memo: "" },
+                    "教育体制": { question: "入社までに学んでおくべきスキルはありますか？", answer: "", placeholder: "学習意欲をアピール", memo: "" },
+                    "社風": { question: "御社の社風を一言で表すと何ですか？", answer: "", placeholder: "企業文化への関心", memo: "" }
+                },
+                "業務内容": {
+                    "具体的な業務": { question: "配属された場合、具体的な1日の業務の流れは？", answer: "", placeholder: "入社後のイメージを具体化", memo: "" },
+                    "やりがい": { question: "この仕事のやりがいは何ですか？", answer: "", placeholder: "仕事へのモチベーション", memo: "" }
+                },
+                "最終確認": {
+                    "懸念点の払拭": { question: "本日の私の話の中で、懸念に感じられた点はありますか？", answer: "", placeholder: "最後に熱意を伝えるチャンス", important: true }
+                }
+            }
+        }
+    },
+    "プレゼン：構成案テンプレート": {
+        desc: "フック、本論、解決策の王道構成",
+        data: {
+            "プレゼン構成": {
+                "導入 (Introduction)": {
+                    "フック": { question: "聞き手の関心を引く導入案", answer: "", placeholder: "・問いかけから始める\n・驚きの統計データを出す\n・個人的なストーリーを話す", memo: "" },
+                    "アジェンダ": { question: "本日の流れの提示", answer: "", placeholder: "1.現状の課題 2.解決策の提案 3.期待される効果 4.まとめ", memo: "" }
+                },
+                "本論 (Body)": {
+                    "課題提起": { question: "解決すべき問題の明確化", answer: "", placeholder: "現状分析と問題点の提示", memo: "" },
+                    "解決策": { question: "具体的な提案内容", answer: "", placeholder: "結論→根拠→ベネフィットの順で", memo: "", important: true },
+                    "根拠・データ": { question: "提案を支える証拠", answer: "", placeholder: "客観的なデータや事例", memo: "" }
+                },
+                "結論 (Conclusion)": {
+                    "まとめ": { question: "メッセージの再確認", answer: "", placeholder: "最も伝えたいことを簡潔に", memo: "" },
+                    "ネクストアクション": { question: "聞き手に取ってほしい行動", answer: "", placeholder: "具体的な行動を促す", memo: "" }
+                }
+            }
+        }
+    }
+};
+
+function openTemplateModal() {
+    const modal = document.getElementById('template-modal');
+    const container = document.getElementById('template-list-container');
+    container.innerHTML = "";
+    modal.style.display = 'flex';
+
+    Object.keys(templateLibrary).forEach(key => {
+        const item = templateLibrary[key];
+        const div = document.createElement('div');
+        div.className = 'template-item';
+        div.innerHTML = `
+            <div class="template-info">
+                <div class="template-name">${key}</div>
+                <div class="template-desc">${item.desc}</div>
+            </div>
+            <button class="template-add-btn" onclick="addTemplateToTabs('${key}')">
+                <span class="material-symbols-outlined">add</span>
+            </button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function addTemplateToTabs(templateKey) {
+    const template = templateLibrary[templateKey];
+    if (!template) return;
+
+    let addedCount = 0;
+    Object.keys(template.data).forEach(big => {
+        if (!appData[big]) { // 既存のタブと重複しない場合のみ追加
+            appData[big] = JSON.parse(JSON.stringify(template.data[big])); // 深いコピー
+            addedCount++;
+        }
+    });
+
+    if (addedCount > 0) {
+        saveData();
+        updateAllUI();
+        showToast(`${templateKey}を追加しました`);
+    } else {
+        showToast("既に追加されているテンプレートです");
+    }
+    closeTemplateModal();
+}
+
+function closeTemplateModal(event) {
+    const modal = document.getElementById('template-modal');
+    if (!event || event.target === modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function setupDefaultTemplates() {
+    // 初期起動時に自動で追加されるテンプレート
+    addTemplateToTabs("面接：基本質問セット");
+    addTemplateToTabs("面接：自己PR");
+    addTemplateToTabs("面接：ガクチカ深掘り");
+    addTemplateToTabs("面接：志望動機");
+    addTemplateToTabs("面接：頻出質問50選(抜粋)");
+    addTemplateToTabs("面接：逆質問");
+    addTemplateToTabs("プレゼン：構成案テンプレート");
+
+    // 初期表示するカテゴリを設定
+    currentBig = "自己分析";
+    currentMid = "導入";
+    currentSmall = "自己紹介";
 }
 
 function updateAllUI() {
@@ -92,13 +248,17 @@ function updateAllUI() {
     renderSmallSelect();
     renderBreadcrumb();
     renderContent();
+    updateUndoButtonVisibility();
 }
 
 function renderContent() {
     const questionInput = document.getElementById('question');
     const item = appData[currentBig][currentMid][currentSmall];
+    const answerInput = document.getElementById('answer');
+
     questionInput.value = item.question || "";
-    document.getElementById('answer').value = item.answer || "";
+    answerInput.value = item.answer || "";
+    answerInput.placeholder = item.placeholder || "ここに回答を入力してください...";
     document.getElementById('memo').value = item.memo || "";
     
     const starIcon = document.getElementById('star-icon');
@@ -121,6 +281,7 @@ function renderContent() {
     if (isPracticeMode) {
         document.getElementById('practice-overlay').style.display = 'flex';
     }
+    updateInputState();
 }
 
 function togglePracticeMode() {
@@ -163,6 +324,28 @@ function findFirstImportant() {
             }
         }
     }
+}
+
+function toggleMobileEditMode() {
+    isMobileEditMode = !isMobileEditMode;
+    document.body.classList.toggle('mobile-edit-active', isMobileEditMode);
+    const icon = document.getElementById('mobile-edit-icon');
+    if (icon) {
+        icon.innerText = isMobileEditMode ? 'edit' : 'edit_off';
+    }
+    updateInputState();
+    showToast(isMobileEditMode ? "スマホ編集モードON" : "スマホ編集モードOFF");
+}
+
+function updateInputState() {
+    const q = document.getElementById('question');
+    const a = document.getElementById('answer');
+    const m = document.getElementById('memo');
+    const isMobile = window.innerWidth <= 600;
+    const shouldBeReadOnly = isProductionMode || (isMobile && !isMobileEditMode);
+    if(q) q.readOnly = shouldBeReadOnly;
+    if(a) a.readOnly = shouldBeReadOnly;
+    if(m) m.readOnly = shouldBeReadOnly;
 }
 
 function toggleProductionMode() {
@@ -347,6 +530,27 @@ function handleSwipe(startX, startY, endX, endY) {
     }
 }
 
+/**
+ * 破壊的変更の前にデータをアーカイブ（ゴミ箱）に保存する
+ */
+function archiveCurrentData() {
+    saveCurrentInput();
+    localStorage.setItem('scriptor_archive', JSON.stringify(appData));
+    updateUndoButtonVisibility();
+}
+
+function restoreFromArchive() {
+    const archived = localStorage.getItem('scriptor_archive');
+    if (archived && confirm("最後に削除またはリセットした状態を復元しますか？")) {
+        appData = JSON.parse(archived);
+        saveData(); // サーバーに保存
+        updateAllUI();
+        localStorage.removeItem('scriptor_archive');
+        updateUndoButtonVisibility();
+        showToast("データを復元しました");
+    }
+}
+
 function printData() {
     window.print();
 }
@@ -367,6 +571,11 @@ function exportData() {
     showToast("バックアップを作成しました");
 }
 
+function updateUndoButtonVisibility() {
+    const btn = document.getElementById('undo-btn');
+    if (btn) btn.style.display = localStorage.getItem('scriptor_archive') ? 'inline-flex' : 'none';
+}
+
 function toggleFullscreen() {
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen();
@@ -380,8 +589,9 @@ function toggleFullscreen() {
 
 function updateCharCount() {
     const text = document.getElementById('answer').value;
+    const speed = parseInt(document.getElementById('speaking-speed').value) || 5;
     const count = text.length;
-    const seconds = Math.floor(count / 5); // 1秒間5文字(分300文字)計算
+    const seconds = Math.floor(count / speed);
     document.getElementById('char-count').innerText = `${count} 文字 (目安: 約 ${seconds}秒)`;
 }
 
@@ -539,8 +749,6 @@ function handleSliderChange(val) {
 function applyFontSize() {
     document.getElementById('question').style.fontSize = (currentFontSize + 0.2) + "em";
     document.getElementById('answer').style.fontSize = currentFontSize + "em";
-    const slider = document.getElementById('font-slider');
-    if (slider) slider.value = currentFontSize;
 }
 
 function setNoteColor(color) {
@@ -551,6 +759,10 @@ function setNoteColor(color) {
 function renderTabs() {
     const container = document.getElementById('tabs-container');
     container.innerHTML = "";
+
+    const keys = Object.keys(appData);
+    // タブが1つでも表示するように変更（ユーザーの混乱を防ぐため）
+    container.style.display = keys.length === 0 ? 'none' : 'flex';
 
     const hasImportantInBig = (big) => {
         if (!isFilterActive) return true;
@@ -739,6 +951,7 @@ function addBig() {
         appData[name] = { "新規中カテゴリ": { "新規小カテゴリ": { "question": "", "answer": "", "memo": "" } } };
         currentBig = name; currentMid = "新規中カテゴリ"; currentSmall = "新規小カテゴリ";
         updateAllUI();
+        saveData();
         document.getElementById('question').focus();
     }
 }
@@ -749,6 +962,7 @@ function addMid() {
         appData[currentBig][name] = { "新規小カテゴリ": { "question": "", "answer": "", "memo": "" } };
         currentMid = name; currentSmall = "新規小カテゴリ";
         updateAllUI();
+        saveData();
         document.getElementById('question').focus();
     }
 }
@@ -759,6 +973,7 @@ function addSmall() {
         appData[currentBig][currentMid][name] = { "question": "", "answer": "", "memo": "" };
         currentSmall = name;
         updateAllUI();
+        saveData();
         document.getElementById('question').focus();
     }
 }
@@ -769,6 +984,7 @@ function renameBig() {
         appData[newName] = appData[currentBig];
         delete appData[currentBig];
         currentBig = newName;
+        saveData();
         updateAllUI();
     }
 }
@@ -776,10 +992,12 @@ function renameBig() {
 function deleteBig() {
     if (Object.keys(appData).length <= 1) { alert("最低1つの大タブが必要です。"); return; }
     if (confirm(`大タブ「${currentBig}」を削除しますか？`)) {
+        archiveCurrentData();
         delete appData[currentBig];
         currentBig = Object.keys(appData)[0];
         currentMid = Object.keys(appData[currentBig])[0];
         currentSmall = Object.keys(appData[currentBig][currentMid])[0];
+        saveData();
         updateAllUI();
     }
 }
@@ -790,6 +1008,7 @@ function renameMid() {
         appData[currentBig][newName] = appData[currentBig][currentMid];
         delete appData[currentBig][currentMid];
         currentMid = newName;
+        saveData();
         updateAllUI();
     }
 }
@@ -797,9 +1016,11 @@ function renameMid() {
 function deleteMid() {
     if (Object.keys(appData[currentBig]).length <= 1) { alert("最低1つの中カテゴリが必要です。"); return; }
     if (confirm(`中カテゴリ「${currentMid}」を削除しますか？`)) {
+        archiveCurrentData();
         delete appData[currentBig][currentMid];
         currentMid = Object.keys(appData[currentBig])[0];
         currentSmall = Object.keys(appData[currentBig][currentMid])[0];
+        saveData();
         updateAllUI();
     }
 }
@@ -810,6 +1031,7 @@ function renameSmall() {
         appData[currentBig][currentMid][newName] = appData[currentBig][currentMid][currentSmall];
         delete appData[currentBig][currentMid][currentSmall];
         currentSmall = newName;
+        saveData();
         updateAllUI();
     }
 }
@@ -817,14 +1039,17 @@ function renameSmall() {
 function deleteSmall() {
     if (Object.keys(appData[currentBig][currentMid]).length <= 1) { alert("最低1つの小カテゴリが必要です。"); return; }
     if (confirm(`小カテゴリ「${currentSmall}」を削除しますか？`)) {
+        archiveCurrentData();
         delete appData[currentBig][currentMid][currentSmall];
         currentSmall = Object.keys(appData[currentBig][currentMid])[0];
+        saveData();
         updateAllUI();
     }
 }
 
 async function resetAllData() {
     if (confirm("全てのデータを初期状態に戻しますか？")) {
+        archiveCurrentData();
         const res = await fetch('/api/reset', { method: 'POST' });
         if (res.ok) location.reload();
     }
@@ -842,17 +1067,30 @@ function openSearchModal() {
 function openTocModal() {
     const modal = document.getElementById('toc-modal');
     const container = document.getElementById('toc-list-container');
+    if (!modal || !container) return;
+
     container.innerHTML = "";
     modal.style.display = 'flex';
 
     Object.keys(appData).forEach(big => {
+        if (!appData[big] || Object.keys(appData[big]).length === 0) return;
+
+        const midKeysToShow = Object.keys(appData[big]).filter(mid => {
+            const smallKeys = Object.keys(appData[big][mid]).filter(small => {
+                return !isFilterActive || appData[big][mid][small].important;
+            });
+            return smallKeys.length > 0;
+        });
+
+        if (midKeysToShow.length === 0) return;
+
         // 大カテゴリ
         const bigDiv = document.createElement('div');
         bigDiv.className = 'toc-big-title';
         bigDiv.innerText = big;
         container.appendChild(bigDiv);
 
-        Object.keys(appData[big]).forEach(mid => {
+        midKeysToShow.forEach(mid => {
             // 中カテゴリ
             const midDiv = document.createElement('div');
             midDiv.className = 'toc-mid-title';
@@ -867,7 +1105,7 @@ function openTocModal() {
                 const smallDiv = document.createElement('div');
                 const isActive = (big === currentBig && mid === currentMid && small === currentSmall);
                 smallDiv.className = 'toc-small-item' + (isActive ? ' active' : '');
-                
+
                 const label = item.question || small;
                 smallDiv.innerHTML = `
                     <span>${label}</span>
@@ -875,12 +1113,14 @@ function openTocModal() {
                 `;
 
                 smallDiv.onclick = () => {
-                    saveCurrentInput();
+                    if (typeof saveCurrentInput === 'function') {
+                        saveCurrentInput();
+                    }
                     currentBig = big;
                     currentMid = mid;
                     currentSmall = small;
                     updateAllUI();
-                    closeTocModal();
+                    document.getElementById('toc-modal').style.display = 'none';
                 };
                 container.appendChild(smallDiv);
             });
@@ -961,6 +1201,17 @@ window.onload = () => {
     // 質問入力時にも高さを自動調整
     document.getElementById('question').addEventListener('input', autoResizeQuestion);
     document.getElementById('answer').addEventListener('input', updateCharCount);
+
+    // スマホ入力中にキーボードが表示された際、フッターやFABを隠す処理
+    const inputs = document.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+        input.addEventListener('focus', () => {
+            if (window.innerWidth <= 600) document.body.classList.add('keyboard-open');
+        });
+        input.addEventListener('blur', () => {
+            if (window.innerWidth <= 600) document.body.classList.remove('keyboard-open');
+        });
+    });
 
     // 画面サイズ変更時に入力状態を再チェック
     window.addEventListener('resize', updateInputState);
