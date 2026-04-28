@@ -117,6 +117,9 @@
         <button class="fab delete" onclick="deleteBig()" title="現在の大タブを削除">
             <span class="material-symbols-outlined">delete</span>
         </button>
+        <button class="fab list-btn" onclick="openTocModal()" title="目次を表示">
+            <span class="material-symbols-outlined">format_list_bulleted</span>
+        </button>
         <button class="fab search" onclick="openSearchModal()" title="検索">
             <span class="material-symbols-outlined">search</span>
         </button>
@@ -128,6 +131,14 @@
             <div class="modal-header">キーワード検索</div>
             <input type="text" id="modal-search-input" placeholder="検索したい文字を入力..." oninput="handleSearch(this.value)">
             <div id="modal-search-results" class="search-results-container active"></div>
+        </div>
+    </div>
+
+    <!-- 目次モーダル -->
+    <div id="toc-modal" class="modal-overlay" onclick="closeTocModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">目次（全項目一覧）</div>
+            <div id="toc-list-container" class="toc-list-container"></div>
         </div>
     </div>
 

@@ -839,6 +839,62 @@ function openSearchModal() {
     document.getElementById('modal-search-results').innerHTML = "";
 }
 
+function openTocModal() {
+    const modal = document.getElementById('toc-modal');
+    const container = document.getElementById('toc-list-container');
+    container.innerHTML = "";
+    modal.style.display = 'flex';
+
+    Object.keys(appData).forEach(big => {
+        // 大カテゴリ
+        const bigDiv = document.createElement('div');
+        bigDiv.className = 'toc-big-title';
+        bigDiv.innerText = big;
+        container.appendChild(bigDiv);
+
+        Object.keys(appData[big]).forEach(mid => {
+            // 中カテゴリ
+            const midDiv = document.createElement('div');
+            midDiv.className = 'toc-mid-title';
+            midDiv.innerText = mid;
+            container.appendChild(midDiv);
+
+            Object.keys(appData[big][mid]).forEach(small => {
+                const item = appData[big][mid][small];
+                if (isFilterActive && !item.important) return;
+
+                // 小カテゴリ（質問項目）
+                const smallDiv = document.createElement('div');
+                const isActive = (big === currentBig && mid === currentMid && small === currentSmall);
+                smallDiv.className = 'toc-small-item' + (isActive ? ' active' : '');
+                
+                const label = item.question || small;
+                smallDiv.innerHTML = `
+                    <span>${label}</span>
+                    ${item.important ? '<span class="material-symbols-outlined toc-star">star</span>' : ''}
+                `;
+
+                smallDiv.onclick = () => {
+                    saveCurrentInput();
+                    currentBig = big;
+                    currentMid = mid;
+                    currentSmall = small;
+                    updateAllUI();
+                    closeTocModal();
+                };
+                container.appendChild(smallDiv);
+            });
+        });
+    });
+}
+
+function closeTocModal(event) {
+    const modal = document.getElementById('toc-modal');
+    if (!event || event.target === modal) {
+        modal.style.display = 'none';
+    }
+}
+
 function closeSearchModal(event) {
     document.getElementById('search-modal').style.display = 'none';
 }
