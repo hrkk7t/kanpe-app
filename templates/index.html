@@ -94,10 +94,13 @@
                 </div>
             </div>
             <div class="card-footer">
-                <div id="char-count" class="char-count">0 文字 (約 0秒)</div>
-                <button class="icon-btn scroll-btn" onclick="toggleAutoScroll()" title="自動スクロール">
-                    <span class="material-symbols-outlined" id="scroll-icon" style="font-size: 18px;">south</span>
-                </button>
+                <img src="{{ url_for('static', filename='logo.svg') }}" class="footer-logo" alt="logo">
+                <div class="footer-right">
+                    <div id="char-count" class="char-count">0 文字 (約 0秒)</div>
+                    <button class="icon-btn scroll-btn" onclick="toggleAutoScroll()" title="自動スクロール">
+                        <span class="material-symbols-outlined" id="scroll-icon" style="font-size: 18px;">south</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>

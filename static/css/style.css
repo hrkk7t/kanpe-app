@@ -98,17 +98,36 @@ body {
 
 .card-footer {
     display: flex;
-    justify-content: flex-end; /* 右寄せ */
+    justify-content: space-between;
     align-items: center;
-    gap: 8px;
     margin-top: 10px;
     border-top: 1px dashed #eee;
     padding-top: 5px;
     width: 100%;
 }
 
+.footer-logo {
+    height: 22px;
+    opacity: 0.6;
+    height: 30px;
+    opacity: 0.8;
+    user-select: none;
+    pointer-events: none;
+}
+
+.footer-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 body.dark-mode .card-footer {
     border-color: #444;
+}
+
+body.dark-mode .footer-logo {
+    opacity: 0.4;
+    opacity: 0.6;
 }
 
 .mobile-font-slider {
