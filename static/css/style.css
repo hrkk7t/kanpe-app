@@ -458,6 +458,13 @@ body.dark-mode .timer-presets button { background: #333; border-color: #444; col
     align-items: center;
 }
 
+.vertical-divider {
+    width: 1px;
+    height: 20px;
+    background-color: #ccc;
+    margin: 0 10px;
+}
+
 .nav-group {
     display: flex;
     align-items: center;
@@ -1221,9 +1228,8 @@ body.dark-mode .template-desc { color: #bbb; }
     /* スマホ閲覧モード時は編集系ボタン（保存・フォルダ/項目の操作・FABの追加/編集/削除）を隠す */
     body:not(.mobile-edit-active) .hierarchy-nav .icon-btn,
     body:not(.mobile-edit-active) .save-btn,
-    body:not(.mobile-edit-active) .fab.add,
-    body:not(.mobile-edit-active) .fab.edit,
-    body:not(.mobile-edit-active) .fab.delete {
+    body:not(.mobile-edit-active) .side-actions,
+    body:not(.mobile-edit-active) #main-fab {
         display: none !important;
     }
 
@@ -1399,7 +1405,7 @@ body.dark-mode .template-desc { color: #bbb; }
         padding: 0;
         margin: 0;
     }
-    .outer-container, .fab-container, .modal-overlay, .timer-panel, #toast-container {
+    .outer-container, .fab-container, .main-fab, .side-actions, .modal-overlay, .timer-panel, #toast-container, .production-phrase, .autosave-status {
         display: none !important;
     }
     .print-only {

@@ -43,6 +43,12 @@
 
             <div class="hierarchy-nav">
                 <div class="nav-group">
+                    フォルダ: 
+                    <button class="icon-btn" onclick="renameTab()" title="フォルダ名の変更"><span class="material-symbols-outlined">drive_file_rename_outline</span></button>
+                    <button class="icon-btn" onclick="deleteTab()" title="フォルダの削除"><span class="material-symbols-outlined">folder_delete</span></button>
+                </div>
+                <div class="vertical-divider"></div>
+                <div class="nav-group">
                     項目: 
                     <select id="item-select" onchange="changeItem()"></select>
                     <button class="icon-btn" onclick="addItem()" title="追加"><span class="material-symbols-outlined">add</span></button>
@@ -103,6 +109,7 @@
     <!-- 編集用ユーティリティ (本番モード中は非表示) -->
     <div id="edit-actions" class="side-actions">
         <button class="sub-fab" onclick="addTab()" title="フォルダ追加"><span class="material-symbols-outlined">create_new_folder</span></button>
+        <button class="sub-fab" onclick="openTemplateModal()" title="テンプレート集"><span class="material-symbols-outlined">grid_view</span></button>
         <button class="sub-fab" onclick="openTocModal()" title="目次"><span class="material-symbols-outlined">format_list_bulleted</span></button>
         <button class="sub-fab" onclick="saveData()" title="手動保存"><span class="material-symbols-outlined">save</span></button>
     </div>

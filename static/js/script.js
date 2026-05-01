@@ -19,40 +19,19 @@ let motivationInterval = null;
 async function loadData() {
     const response = await fetch('/api/data');
     appData = await response.json();
-    const bigKeys = Object.keys(appData);
-    if (bigKeys.length > 0) {
-        currentTab = bigKeys[0];
-        currentItem = Object.keys(appData[currentTab])[0];
-    }
 
-    // --- テンプレートの初期化 ---
-    // データが完全に空（新規ユーザー）の場合のみ、デフォルトのテンプレートを作成します。
-    // これにより、ユーザーが削除した項目がリロード時に勝手に復活するのを防ぎます。
-    if (bigKeys.length === 0) {
+    // 表示対象のフォルダ（キーが _ で始まらないもの）を抽出
+    const folderKeys = Object.keys(appData).filter(k => !k.startsWith('_'));
+
+    if (folderKeys.length === 0) {
+        // データが何もない、または内部データしかない場合は初期テンプレートをセットアップ
         setupDefaultTemplates();
+    } else {
+        // 既存データがある場合は、最初のフォルダを表示
+        currentTab = folderKeys[0];
+        currentItem = Object.keys(appData[currentTab])[0] || "";
+        updateAllUI();
     }
-    updateAllUI();
-}
-
-function applyTemplates() {
-    if (confirm("既存のデータにテンプレートを追加しますか？（同名のタブがある場合は上書きされません）")) {
-        setupDefaultTemplates();
-        saveData();
-    }
-}
-
-function setupDefaultTemplates() {
-    // 初期起動時に自動で追加されるテンプレート
-    addTemplateToTabs("面接：基本質問セット");
-    addTemplateToTabs("面接：自己PR");
-    addTemplateToTabs("面接：ガクチカ・実績深掘り");
-    addTemplateToTabs("面接：志望動機");
-    addTemplateToTabs("面接：逆質問");
-    addTemplateToTabs("プレゼン：構成案テンプレート");
-
-    // 初期表示を設定
-    currentTab = "自己紹介";
-    currentItem = "自己紹介";
 }
 
 /**
@@ -250,17 +229,22 @@ function addTemplateToTabs(templateKey) {
     const template = templateLibrary[templateKey];
     if (!template) return;
 
-    let addedCount = 0;
+    saveCurrentInput(); // 現在作業中の内容を保存
+    let addedFolders = [];
     Object.keys(template.data).forEach(folder => {
         if (!appData[folder]) { // 既存のフォルダと重複しない場合のみ追加
             appData[folder] = JSON.parse(JSON.stringify(template.data[folder])); // 深いコピー
-            addedCount++;
+            addedFolders.push(folder);
         }
     });
 
-    if (addedCount > 0) {
-        saveData();
+    if (addedFolders.length > 0) {
+        // 追加された最初のフォルダに自動移動
+        currentTab = addedFolders[0];
+        currentItem = Object.keys(appData[currentTab])[0];
+        
         updateAllUI();
+        saveData();
         showToast(`${templateKey}を追加しました`);
     } else {
         showToast("既に追加されているテンプレートです");
@@ -276,20 +260,34 @@ function closeTemplateModal(event) {
 }
 
 function setupDefaultTemplates() {
-    // 初期起動時に自動で追加されるテンプレート
-    addTemplateToTabs("面接：基本質問セット");
-    addTemplateToTabs("面接：自己PR");
-    addTemplateToTabs("面接：ガクチカ深掘り");
-    addTemplateToTabs("面接：志望動機");
-    addTemplateToTabs("面接：逆質問");
-    addTemplateToTabs("プレゼン：構成案テンプレート");
+    const defaultTemplates = [
+        "面接：志望動機",
+        "面接：自己PR",
+        "面接：基本質問セット",
+        "面接：ガクチカ・実績深掘り",
+        "面接：逆質問",
+        "プレゼン：構成案テンプレート"
+    ];
 
-    // 初期表示するカテゴリを設定
-    const firstTab = Object.keys(appData)[0];
-    if (firstTab) {
-        currentTab = firstTab;
-        currentItem = Object.keys(appData[firstTab])[0] || "";
+    defaultTemplates.forEach(key => {
+        const template = templateLibrary[key];
+        if (template) {
+            Object.keys(template.data).forEach(folder => {
+                if (!appData[folder]) {
+                    appData[folder] = JSON.parse(JSON.stringify(template.data[folder]));
+                }
+            });
+        }
+    });
+
+    // 「志望動機」を初期表示に設定（存在する場合）
+    if (appData["志望動機"]) {
+        currentTab = "志望動機";
+        currentItem = Object.keys(appData[currentTab])[0];
     }
+
+    updateAllUI();
+    saveData(true);
 }
 
 function updateAllUI() {
@@ -945,6 +943,7 @@ function renderTabs() {
     container.style.display = keys.length === 0 ? 'none' : 'flex';
 
     const hasImportantInBig = (big) => {
+        if (big.startsWith('_')) return false;
         if (!isFilterActive) return true;
         return Object.values(appData[big]).some(item => item.important);
     };
@@ -1091,6 +1090,7 @@ function changeItem() {
 function addTab() { // フォルダ(タブ)の追加
     const name = prompt("新しいフォルダの名前:");
     if (name && !appData[name]) {
+        saveCurrentInput();
         appData[name] = { "新規項目": { "question": "", "answer": "", "memo": "" } };
         currentTab = name; currentItem = "新規項目";
         updateAllUI();
@@ -1102,6 +1102,7 @@ function addTab() { // フォルダ(タブ)の追加
 function addItem() {
     const name = prompt("新しい項目の名前:");
     if (name && !appData[currentTab][name]) {
+        saveCurrentInput();
         appData[currentTab][name] = { "question": "", "answer": "", "memo": "" };
         currentItem = name;
         updateAllUI();
@@ -1116,20 +1117,21 @@ function renameTab() { // フォルダ(タブ)のリネーム
         appData[newName] = appData[currentTab];
         delete appData[currentTab];
         currentTab = newName;
-        saveData();
         updateAllUI();
+        saveData();
     }
 }
 
 function deleteTab() { // フォルダ(タブ)の削除
-    if (Object.keys(appData).length <= 1) { alert("最低1つのフォルダが必要です。"); return; }
+    const folderKeys = Object.keys(appData).filter(k => !k.startsWith('_'));
+    if (folderKeys.length <= 1) { alert("最低1つのフォルダが必要です。"); return; }
     if (confirm(`フォルダ「${currentTab}」を削除しますか？`)) {
         archiveCurrentData();
         delete appData[currentTab];
-        currentTab = Object.keys(appData)[0];
+        currentTab = Object.keys(appData).filter(k => !k.startsWith('_'))[0];
         currentItem = Object.keys(appData[currentTab])[0];
-        saveData();
         updateAllUI();
+        saveData();
     }
 }
 
@@ -1139,8 +1141,8 @@ function renameItem() {
         appData[currentTab][newName] = appData[currentTab][currentItem];
         delete appData[currentTab][currentItem];
         currentItem = newName;
-        saveData();
         updateAllUI();
+        saveData();
     }
 }
 
@@ -1150,8 +1152,8 @@ function deleteItem() {
         archiveCurrentData();
         delete appData[currentTab][currentItem];
         currentItem = Object.keys(appData[currentTab])[0];
-        saveData();
         updateAllUI();
+        saveData();
     }
 }
 
