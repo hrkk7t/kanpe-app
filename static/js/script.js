@@ -1,7 +1,6 @@
 let appData = {};
-let currentBig = "";
-let currentMid = "";
-let currentSmall = "";
+let currentTab = "";
+let currentItem = "";
 let currentFontSize = 1.2;
 let currentNoteColor = "#fff9c4";
 let isPracticeMode = false;
@@ -15,17 +14,15 @@ let isScrolling = false;
 let touchStartX = 0;
 let touchStartY = 0;
 let autoSaveTimer = null;
+let motivationInterval = null;
 
 async function loadData() {
     const response = await fetch('/api/data');
     appData = await response.json();
     const bigKeys = Object.keys(appData);
     if (bigKeys.length > 0) {
-        currentBig = bigKeys[0];
-        const midKeys = Object.keys(appData[currentBig]);
-        currentMid = midKeys[0];
-        const smallKeys = Object.keys(appData[currentBig][currentMid]);
-        currentSmall = smallKeys[0];
+        currentTab = bigKeys[0];
+        currentItem = Object.keys(appData[currentTab])[0];
     }
 
     // --- テンプレートの初期化 ---
@@ -48,16 +45,14 @@ function setupDefaultTemplates() {
     // 初期起動時に自動で追加されるテンプレート
     addTemplateToTabs("面接：基本質問セット");
     addTemplateToTabs("面接：自己PR");
-    addTemplateToTabs("面接：ガクチカ深掘り");
+    addTemplateToTabs("面接：ガクチカ・実績深掘り");
     addTemplateToTabs("面接：志望動機");
-    addTemplateToTabs("面接：頻出質問50選(抜粋)");
     addTemplateToTabs("面接：逆質問");
     addTemplateToTabs("プレゼン：構成案テンプレート");
 
-    // 初期表示するカテゴリを設定
-    currentBig = "自己分析";
-    currentMid = "導入";
-    currentSmall = "自己紹介";
+    // 初期表示を設定
+    currentTab = "自己紹介";
+    currentItem = "自己紹介";
 }
 
 /**
@@ -68,29 +63,25 @@ const templateLibrary = {
     "面接：基本質問セット": {
         desc: "自己紹介、強み、挫折経験など必須項目",
         data: {
-            "自己分析": {
-                "導入": {
-                    "自己紹介": { 
-                        question: "1分間で自己紹介をしてください。", 
-                        answer: "本日は貴重なお時間をいただき、ありがとうございます。\n\n【大学名・学部 / 現職の社名】の、【氏名】と申します。\n\n【学生時代 / 現職】では、主に【注力したこと・役割】に力を入れて取り組みました。\nその経験の中で培った【自分の強み・スキル】を活かし、御社の【具体的な業務やビジョン】に貢献したいと考えております。\n\n本日はどうぞよろしくお願いいたします。", 
-                        placeholder: "氏名、所属、注力したこと、意気込みを簡潔に。", 
-                        memo: "明るく元気な声で！1分（約300文字）に収める", 
-                        important: true 
-                    },
+            "自己紹介": {
+                "自己紹介": { 
+                    question: "1分間で自己紹介をしてください。", 
+                    answer: "本日は貴重なお時間をいただき、ありがとうございます。\n\n【大学名・学部 / 現職の社名】の、【氏名】と申します。\n\n【学生時代 / 現職】では、主に【注力したこと・役割】に力を入れて取り組みました。\nその経験の中で培った【自分の強み・スキル】を活かし、御社の【具体的な業務やビジョン】に貢献したいと考えております。\n\n本日はどうぞよろしくお願いいたします。", 
+                    placeholder: "氏名、所属、注力したこと、意気込みを簡潔に。", 
+                    memo: "明るく元気な声で！1分（約300文字）に収める", 
+                    important: true 
                 },
-                "性格・価値観": {
-                    "周囲からの評価": { 
-                        question: "周囲からどのような人だと言われますか？", 
-                        answer: "周囲からはよく「【キャッチコピー・評価される特徴】」だと言われます。\n\n実際、【エピソード：例：イベント企画】の際にも、私が【自分が取った行動】をしたことで、周囲から「【言われたポジティブな言葉】」と評価していただきました。\n\nこの【自分の持ち味】は、仕事においても【どう活かせるか】という点で活かせると考えています。", 
-                        placeholder: "客観的な視点と、それを裏付けるエピソード", 
-                        memo: "" 
-                    },
-                    "挫折経験": { 
-                        question: "これまでの人生で一番の挫折は何ですか？", 
-                        answer: "私の最大の挫折は、【挫折した出来事】です。\n\n[状況・課題] 当時、【直面した困難や壁】にぶつかり、非常に悔しい思いをしました。\n[行動] しかし諦めず、原因は【分析した原因】にあると考え、以下の行動をとりました。\n1. 【行動1】\n2. 【行動2】\n[結果] その結果、【どのように乗り越えたか・結果】に至りました。\n\nこの経験から、【学んだ教訓】という教訓を得ることができました。", 
-                        placeholder: "状況→課題→行動→結果→学び の順で", 
-                        memo: "どう立ち直ったか（レジリエンス）を伝える" 
-                    }
+                "周囲からの評価": { 
+                    question: "周囲からどのような人だと言われますか？", 
+                    answer: "周囲からはよく「【キャッチコピー・評価される特徴】」だと言われます。\n\n実際、【エピソード：例：イベント企画】の際にも、私が【自分が取った行動】をしたことで、周囲から「【言われたポジティブな言葉】」と評価していただきました。\n\nこの【自分の持ち味】は、仕事においても【どう活かせるか】という点で活かせると考えています。", 
+                    placeholder: "客観的な視点と、それを裏付けるエピソード", 
+                    memo: "" 
+                },
+                "挫折経験": { 
+                    question: "これまでの人生で一番の挫折は何ですか？", 
+                    answer: "私の最大の挫折は、【挫折した出来事】です。\n\n[状況・課題] 当時、【直面した困難や壁】にぶつかり、非常に悔しい思いをしました。\n[行動] しかし諦めず、原因は【分析した原因】にあると考え、以下の行動をとりました。\n1. 【行動1】\n2. 【行動2】\n[結果] その結果、【どのように乗り越えたか・結果】に至りました。\n\nこの経験から、【学んだ教訓】という教訓を得ることができました。", 
+                    placeholder: "状況→課題→行動→結果→学び の順で", 
+                    memo: "どう立ち直ったか（レジリエンス）を伝える" 
                 }
             }
         }
@@ -118,10 +109,10 @@ const templateLibrary = {
     "面接：ガクチカ・実績深掘り": {
         desc: "力を入れたことのSTAR構成（新卒・中途兼用）",
         data: {
-            "実績・経験": {
+            "ガクチカ": {
                 "メインエピソード": { 
                     question: "これまでで最も力を入れたこと（実績）は？", 
-                    answer: "私が最も力を入れたのは、【打ち込んだ活動やプロジェクト名】です。\n\n[状況・役割] 当時、【当時の環境】の中で、【自分の役割】を務めていました。\n[課題] 目標として【目標内容】を掲げていましたが、【直面した課題・壁】という問題がありました。\n[行動] そこで私は、【考えた解決策】を実行しました。具体的には以下の2点です。\n1. 【行動の詳細1】\n2. 【行動の詳細2】\n[結果] その結果、【具体的な成果・数字】を達成することができました。", 
+                    answer: "私が最も力を入れたのは、【打ち込んだ活動やプロジェクト名】です。\n\n[状況・役割] 当時、【当時の環境】の中で、【自分の役割】を務めていました。\n[課題] 目標として【目標内容】を掲げていました。しかし、【直面した課題・壁】という問題がありました。\n[行動] そこで私は、【考えた解決策】を実行しました。具体的には以下の2点です。\n1. 【行動の詳細1】\n2. 【行動の詳細2】\n[結果] その結果、【具体的な成果・数字】を達成することができました。", 
                     placeholder: "S:状況 T:課題 A:行動 R:結果 で記載", 
                     memo: "数字を使って説得力UP！", 
                     important: true 
@@ -145,34 +136,30 @@ const templateLibrary = {
         desc: "企業への熱意とマッチ度を伝える構成",
         data: {
             "志望動機": {
-                "業界・企業": {
-                    "業界理由": { 
-                        question: "なぜこの業界を志望しているのですか？", 
-                        answer: "私が【業界名】業界を志望する理由は、【業界に興味を持った原体験やきっかけ】があるからです。\n\nそこから業界について深く調べる中で、【業界の魅力や将来性】に強く惹かれました。\n私の【自分の強み】を活かして、この業界の【解決したい課題】に貢献したいと考えております。", 
-                        placeholder: "業界への興味のきっかけと、実現したいこと", 
-                        memo: "" 
-                    },
-                    "弊社である理由": { 
-                        question: "数ある企業の中で、なぜ弊社なのですか？", 
-                        answer: "御社を志望する最大の理由は、御社の【御社ならではの強み：理念 / 独自技術 / サービス】に強く共感したためです。\n\n他社と比較した際、御社は特に【他社との明確な違い】という点で優れていると感じています。\n\n私の【活かせる経験・スキル】を最も発揮できるのは、まさにそのような環境である御社だと確信し、第一志望としております。", 
-                        placeholder: "他社との比較、共感した点、自分のビジョンとの重なり", 
-                        memo: "「他社でもできるよね？」と言われないように", 
-                        important: true 
-                    },
-                    "職種理由": { 
-                        question: "なぜこの職種を希望するのですか？", 
-                        answer: "私が【希望職種】を志望する理由は、【職種に対する熱意・理由】だからです。\n\nこれまで培ってきた【関連する経験やスキル】は、この職種の【具体的な業務】において早期にキャッチアップし、貢献できると考えています。", 
-                        placeholder: "職種の魅力と、自分の適性", 
-                        memo: "" 
-                    }
+                "業界理由": { 
+                    question: "なぜこの業界を志望しているのですか？", 
+                    answer: "私が【業界名】業界を志望する理由は、【業界に興味を持った原体験やきっかけ】があるからです。\n\nそこから業界について深く調べる中で、【業界の魅力や将来性】に強く惹かれました。\n私の【自分の強み】を活かして、この業界の【解決したい課題】に貢献したいと考えております。", 
+                    placeholder: "業界への興味のきっかけと、実現したいこと", 
+                    memo: "" 
                 },
-                "キャリアビジョン": {
-                    "入社後にやりたいこと": { 
-                        question: "入社してまず挑戦したいことは何ですか？", 
-                        answer: "入社後はまず、【具体的な業務内容やプロジェクト】に挑戦したいと考えています。\n\nそのためにも、まずは【身につけたいスキルや知識】を早期に習得し、一日でも早くチームの戦力として貢献できるよう努めます。", 
-                        placeholder: "具体的な業務内容と貢献イメージ", 
-                        memo: "" 
-                    }
+                "弊社である理由": { 
+                    question: "数ある企業の中で、なぜ弊社なのですか？", 
+                    answer: "御社を志望する最大の理由は、御社の【御社ならではの強み：理念 / 独自技術 / サービス】に強く共感したためです。\n\n他社と比較した際、御社は特に【他社との明確な違い】という点で優れていると感じています。\n\n私の【活かせる経験・スキル】を最も発揮できるのは、まさにそのような環境である御社だと確信し、第一志望としております。", 
+                    placeholder: "他社との比較、共感した点、自分のビジョンとの重なり", 
+                    memo: "「他社でもできるよね？」と言われないように", 
+                    important: true 
+                },
+                "職種理由": { 
+                    question: "なぜこの職種を希望するのですか？", 
+                    answer: "私が【希望職種】を志望する理由は、【職種に対する熱意・理由】だからです。\n\nこれまで培ってきた【関連する経験やスキル】は、この職種の【具体的な業務】において早期にキャッチアップし、貢献できると考えています。", 
+                    placeholder: "職種の魅力と、自分の適性", 
+                    memo: "" 
+                },
+                "入社後にやりたいこと": { 
+                    question: "入社してまず挑戦したいことは何ですか？", 
+                    answer: "入社後はまず、【具体的な業務内容やプロジェクト】に挑戦したいと考えています。\n\nそのためにも、まずは【身につけたいスキルや知識】を早期に習得し、一日でも早くチームの戦力として貢献できるよう努めます。", 
+                    placeholder: "具体的な業務内容と貢献イメージ", 
+                    memo: "" 
                 }
             }
         }
@@ -181,27 +168,23 @@ const templateLibrary = {
         desc: "熱意を伝えるための効果的な逆質問",
         data: {
             "逆質問": {
-                "企業理解": {
-                    "活躍する人物像": { 
-                        question: "【逆質問】活躍している方の特徴", 
-                        answer: "御社で早期にキャッチアップし、貢献したいと考えております。\n\n差し支えなければ、現在御社で実際に活躍されている方に共通する『マインドセット』や『行動特性』があれば教えていただけますでしょうか？", 
-                        placeholder: "入社後のイメージを具体化するための質問", 
-                        memo: "メモを取りながら聞く姿勢を見せる" 
-                    },
-                    "教育体制": { 
-                        question: "【逆質問】入社前の準備", 
-                        answer: "内定をいただけた場合、入社までに少しでも即戦力に近づきたいと考えております。\n\n入社までに特に勉強しておくべき知識や、読んでおくべき書籍などがあれば教えていただけますでしょうか？", 
-                        placeholder: "学習意欲をアピールする質問", 
-                        memo: "" 
-                    }
+                "活躍する人物像": { 
+                    question: "【逆質問】活躍している方の特徴", 
+                    answer: "御社で早期にキャッチアップし、貢献したいと考えております。\n\n差し支えなければ、現在御社で実際に活躍されている方に共通する『マインドセット』や『行動特性』があれば教えていただけますでしょうか？", 
+                    placeholder: "入社後のイメージを具体化するための質問", 
+                    memo: "メモを取りながら聞く姿勢を見せる" 
                 },
-                "最終確認": {
-                    "懸念点の払拭": { 
-                        question: "【逆質問】懸念点の払拭（クロージング）", 
-                        answer: "本日は貴重なお話をありがとうございました。最後に一点だけよろしいでしょうか。\n\n私としては御社への入社を強く希望しておりますが、本日の面接を通じて、私の経験やスキルに関して何か懸念に感じられた点はございましたでしょうか？\nもしあれば、この場で補足させていただきたいと考えております。", 
-                        placeholder: "最後に熱意を伝え、誤解を解くチャンス", 
-                        important: true 
-                    }
+                "教育体制": { 
+                    question: "【逆質問】入社前の準備", 
+                    answer: "内定をいただけた場合、入社までに少しでも即戦力に近づきたいと考えております。\n\n入社までに特に勉強しておくべき知識や、読んでおくべき書籍などがあれば教えていただけますでしょうか？", 
+                    placeholder: "学習意欲をアピールする質問", 
+                    memo: "" 
+                },
+                "懸念点の払拭": { 
+                    question: "【逆質問】懸念点の払拭（クロージング）", 
+                    answer: "本日は貴重なお話をありがとうございました。最後に一点だけよろしいでしょうか。\n\n私としては御社への入社を強く希望しておりますが、本日の面接を通じて、私の経験やスキルに関して何か懸念に感じられた点はございましたでしょうか？\nもしあれば、この場で補足させていただきたいと考えております。", 
+                    placeholder: "最後に熱意を伝え、誤解を解くチャンス", 
+                    important: true 
                 }
             }
         }
@@ -209,37 +192,31 @@ const templateLibrary = {
     "プレゼン：構成案テンプレート": {
         desc: "フック、本論、解決策の王道構成",
         data: {
-            "プレゼン構成": {
-                "導入 (Introduction)": {
-                    "フック・アジェンダ": { 
-                        question: "導入：聞き手の関心を引く", 
-                        answer: "皆様、本日はお集まりいただきありがとうございます。\n突然ですが、【驚きのデータや、聞き手への問いかけ】をご存知でしょうか？\n\n本日はこの課題を解決するための提案をお持ちしました。\n以下の流れでご説明いたします。\n1. 【現状の課題】\n2. 【解決策の提案】\n3. 【期待される効果】\n\nお時間は【〇分】ほど頂戴いたします。", 
-                        placeholder: "問いかけ、驚きの事実、ストーリーなど", 
-                        memo: "最初の10秒で心をつかむ！" 
-                    }
+            "プレゼン": {
+                "導入": { 
+                    question: "導入：聞き手の関心を引く", 
+                    answer: "皆様、本日はお集まりいただきありがとうございます。\n突然ですが、【驚きのデータや、聞き手への問いかけ】をご存知でしょうか？\n\n本日はこの課題を解決するための提案をお持ちしました。\n以下の流れでご説明いたします。\n1. 【現状の課題】\n2. 【解決策の提案】\n3. 【期待される効果】\n\nお時間は【〇分】ほど頂戴いたします。", 
+                    placeholder: "問いかけ、驚きの事実、ストーリーなど", 
+                    memo: "最初の10秒で心をつかむ！" 
                 },
-                "本論 (Body)": {
-                    "課題提起": { 
-                        question: "現状分析と問題点の提示", 
-                        answer: "まず現状についてですが、現在私たちのチーム（または業界）は【現在の状況】という状態にあります。\n\nしかし、ここで大きな問題となっているのが【解決すべき課題】です。\nこのまま放置すると、【予想される最悪の事態や損失】を招く恐れがあります。", 
-                        placeholder: "現状分析と問題点の提示", 
-                        memo: "" 
-                    },
-                    "解決策と根拠": { 
-                        question: "具体的な提案内容とデータ", 
-                        answer: "そこで私が提案する解決策は、【提案のコアメッセージ・結論】です。\n\nなぜこれが有効なのか、理由は2つあります。\n\n1つ目は、【理由1】です。\n【裏付けとなるデータや事例】\n\n2つ目は、【理由2】です。\n【コスト削減や効率化などのメリット】", 
-                        placeholder: "結論→理由→具体例 の順で", 
-                        memo: "ゆっくり力強く話す", 
-                        important: true 
-                    }
+                "課題提起": { 
+                    question: "現状分析と問題点の提示", 
+                    answer: "まず現状についてですが、現在私たちのチーム（または業界）は【現在の状況】という状態にあります。\n\nしかし、ここで大きな問題となっているのが【解決すべき課題】です。\nこのまま放置すると、【予想される最悪の事態や損失】を招く恐れがあります。", 
+                    placeholder: "現状分析と問題点の提示", 
+                    memo: "" 
                 },
-                "結論 (Conclusion)": {
-                    "まとめ・アクション": { 
-                        question: "メッセージの再確認と次の行動", 
-                        answer: "まとめますと、【提案のコアメッセージ】を実行することで、【得られる最大のベネフィット】を実現できます。\n\nこのプロジェクトを前に進めるため、まずは【聞き手に取ってほしい具体的な行動・ネクストアクション】をお願いしたいと考えております。\n\nご清聴ありがとうございました。質疑応答に移らせていただきます。", 
-                        placeholder: "最も伝えたいことの反復と、具体的な行動喚起", 
-                        memo: "最後まで堂々と！" 
-                    }
+                "解決策と根拠": { 
+                    question: "具体的な提案内容とデータ", 
+                    answer: "そこで私が提案する解決策は、【提案のコアメッセージ・結論】です。\n\nなぜこれが有効なのか、理由は2つあります。\n\n1つ目は、【理由1】です。\n【裏付けとなるデータや事例】\n\n2つ目は、【理由2】です。\n【コスト削減や効率化などのメリット】", 
+                    placeholder: "結論→理由→具体例 の順で", 
+                    memo: "ゆっくり力強く話す", 
+                    important: true 
+                },
+                "まとめ・アクション": { 
+                    question: "メッセージの再確認と次の行動", 
+                    answer: "まとめますと、【提案のコアメッセージ】を実行することで、【得られる最大のベネフィット】を実現できます。\n\nこのプロジェクトを前に進めるため、まずは【聞き手に取ってほしい具体的な行動・ネクストアクション】をお願いしたいと考えております。\n\nご清聴ありがとうございました。質疑応答に移らせていただきます。", 
+                    placeholder: "最も伝えたいことの反復と、具体的な行動喚起", 
+                    memo: "最後まで堂々と！" 
                 }
             }
         }
@@ -274,9 +251,9 @@ function addTemplateToTabs(templateKey) {
     if (!template) return;
 
     let addedCount = 0;
-    Object.keys(template.data).forEach(big => {
-        if (!appData[big]) { // 既存のタブと重複しない場合のみ追加
-            appData[big] = JSON.parse(JSON.stringify(template.data[big])); // 深いコピー
+    Object.keys(template.data).forEach(folder => {
+        if (!appData[folder]) { // 既存のフォルダと重複しない場合のみ追加
+            appData[folder] = JSON.parse(JSON.stringify(template.data[folder])); // 深いコピー
             addedCount++;
         }
     });
@@ -304,20 +281,20 @@ function setupDefaultTemplates() {
     addTemplateToTabs("面接：自己PR");
     addTemplateToTabs("面接：ガクチカ深掘り");
     addTemplateToTabs("面接：志望動機");
-    addTemplateToTabs("面接：頻出質問50選(抜粋)");
     addTemplateToTabs("面接：逆質問");
     addTemplateToTabs("プレゼン：構成案テンプレート");
 
     // 初期表示するカテゴリを設定
-    currentBig = "自己分析";
-    currentMid = "導入";
-    currentSmall = "自己紹介";
+    const firstTab = Object.keys(appData)[0];
+    if (firstTab) {
+        currentTab = firstTab;
+        currentItem = Object.keys(appData[firstTab])[0] || "";
+    }
 }
 
 function updateAllUI() {
     renderTabs();
-    renderMidSelect();
-    renderSmallSelect();
+    renderItemSelect();
     renderBreadcrumb();
     renderContent();
     updateUndoButtonVisibility();
@@ -325,7 +302,7 @@ function updateAllUI() {
 
 function renderContent() {
     const questionInput = document.getElementById('question');
-    const item = appData[currentBig][currentMid][currentSmall];
+    const item = appData[currentTab][currentItem];
     const answerInput = document.getElementById('answer');
 
     questionInput.value = item.question || "";
@@ -340,11 +317,11 @@ function renderContent() {
     autoResizeQuestion();
     
     const note = document.querySelector('.sticky-note');
-    note.style.top = appData[currentBig][currentMid][currentSmall].top || "80px";
-    note.style.left = appData[currentBig][currentMid][currentSmall].left || "740px";
+    note.style.top = appData[currentTab][currentItem].top || "80px";
+    note.style.left = appData[currentTab][currentItem].left || "740px";
     note.style.right = "auto";
 
-    setNoteColor(appData[currentBig][currentMid][currentSmall].color || "#fff9c4");
+    setNoteColor(appData[currentTab][currentItem].color || "#fff9c4");
     // 現在のフォントサイズ設定を適用
     applyFontSize();
     updateCharCount();
@@ -354,6 +331,18 @@ function renderContent() {
         document.getElementById('practice-overlay').style.display = 'flex';
     }
     updateInputState();
+}
+
+function updateProductionPhrase() {
+    const display = document.getElementById('production-phrase');
+    const phrases = appData._motivationPhrases || [];
+    if (isProductionMode && phrases.length > 0 && display) {
+        const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+        display.innerText = `「${randomPhrase}」`;
+        display.style.display = 'block';
+    } else {
+        if (display) display.style.display = 'none';
+    }
 }
 
 function togglePracticeMode() {
@@ -375,8 +364,7 @@ function toggleFilterImportant() {
     document.getElementById('filter-icon').classList.toggle('active', isFilterActive);
     
     if (isFilterActive) {
-        // 現在の項目が重要でない場合、最初の重要項目へ移動
-        const item = appData[currentBig][currentMid][currentSmall];
+        const item = appData[currentTab][currentItem];
         if (!item.important) {
             findFirstImportant();
         }
@@ -386,13 +374,11 @@ function toggleFilterImportant() {
 }
 
 function findFirstImportant() {
-    for (const b in appData) {
-        for (const m in appData[b]) {
-            for (const s in appData[b][m]) {
-                if (appData[b][m][s].important) {
-                    currentBig = b; currentMid = m; currentSmall = s;
-                    return;
-                }
+    for (const f in appData) {
+        for (const i in appData[f]) {
+            if (appData[f][i].important) {
+                currentTab = f; currentItem = i;
+                return;
             }
         }
     }
@@ -420,27 +406,97 @@ function updateInputState() {
     if(m) m.readOnly = shouldBeReadOnly;
 }
 
-function toggleProductionMode() {
+function toggleProductionWithFullscreen() {
     isProductionMode = !isProductionMode;
-    document.body.classList.toggle('production-mode', isProductionMode);
-    updateInputState();
-
-    const icon = document.getElementById('production-icon');
-    const button = document.getElementById('production-mode-btn');
+    
+    const icon = document.getElementById('main-fab-icon');
+    const fab = document.getElementById('main-fab');
+    const editActions = document.getElementById('edit-actions');
     
     if (isProductionMode) {
-        icon.innerText = 'edit_note';
-        button.title = '本番モードを解除（編集モードに戻る）';
-        showToast("本番モードON（編集不可）");
+        // 本番モード開始
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.log("Error attempting to enable full-screen mode", err);
+            });
+        }
+        icon.innerText = 'edit';
+        fab.title = "編集に戻る";
+        if (editActions) editActions.style.display = 'none';
+        showToast("本番モード・フルスクリーン開始");
+        
+        // 応援メッセージの開始
+        updateProductionPhrase();
+        motivationInterval = setInterval(updateProductionPhrase, 10000); // 10秒ごとに更新
     } else {
-        icon.innerText = 'cast';
-        button.title = '本番モード';
+        // 編集モードに戻る
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        }
+        icon.innerText = 'play_arrow';
+        fab.title = "本番モード開始";
+        if (editActions) editActions.style.display = 'flex';
         showToast("編集モードに戻りました");
+
+        // 応援メッセージの停止
+        if (motivationInterval) clearInterval(motivationInterval);
+        const display = document.getElementById('production-phrase');
+        if (display) display.style.display = 'none';
+    }
+    
+    document.body.classList.toggle('production-mode', isProductionMode);
+    updateInputState();
+}
+
+function toggleSettingsDropdown() {
+    document.getElementById("settings-dropdown").classList.toggle("show");
+}
+
+function openGuideModal() {
+    document.getElementById('guide-modal').style.display = 'flex';
+    renderMotivationPhrases();
+}
+
+function closeGuideModal(event) {
+    const modal = document.getElementById('guide-modal');
+    if (!event || event.target === modal) {
+        modal.style.display = 'none';
     }
 }
 
+function renderMotivationPhrases() {
+    const list = document.getElementById('motivation-list');
+    if (!list) return;
+    list.innerHTML = "";
+    const phrases = appData._motivationPhrases || [];
+    phrases.forEach((text, index) => {
+        const li = document.createElement('li');
+        li.className = 'phrase-item';
+        li.innerHTML = `<span>「${text}」</span><button onclick="deleteMotivationPhrase(${index})"><span class="material-symbols-outlined" style="font-size:18px;">delete</span></button>`;
+        list.appendChild(li);
+    });
+}
+
+function addMotivationPhrase() {
+    const input = document.getElementById('motivation-input');
+    const text = input.value.trim();
+    if (text) {
+        if (!appData._motivationPhrases) appData._motivationPhrases = [];
+        appData._motivationPhrases.push(text);
+        input.value = "";
+        renderMotivationPhrases();
+        saveData(true);
+    }
+}
+
+function deleteMotivationPhrase(index) {
+    appData._motivationPhrases.splice(index, 1);
+    renderMotivationPhrases();
+    saveData(true);
+}
+
 function toggleStar() {
-    const item = appData[currentBig][currentMid][currentSmall];
+    const item = appData[currentTab][currentItem];
     item.important = !item.important;
     renderContent();
 }
@@ -577,25 +633,25 @@ function handleSwipe(startX, startY, endX, endY) {
     
     // 横方向の移動が縦方向より大きく、かつ一定以上の距離(70px)がある場合のみ実行
     if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 70) {
-        let smallKeys = Object.keys(appData[currentBig][currentMid]);
+        let itemKeys = Object.keys(appData[currentTab]);
         if (isFilterActive) {
-            smallKeys = smallKeys.filter(s => appData[currentBig][currentMid][s].important);
+            itemKeys = itemKeys.filter(i => appData[currentTab][i].important);
         }
         
-        const currentIndex = smallKeys.indexOf(currentSmall);
+        const currentIndex = itemKeys.indexOf(currentItem);
         
         if (diffX > 0) {
-            // 左スワイプ -> 次の小カテゴリへ
-            if (currentIndex < smallKeys.length - 1) {
+            // 左スワイプ -> 次の項目へ
+            if (currentIndex < itemKeys.length - 1) {
                 saveCurrentInput();
-                currentSmall = smallKeys[currentIndex + 1];
+                currentItem = itemKeys[currentIndex + 1];
                 updateAllUI();
             }
         } else {
-            // 右スワイプ -> 前の小カテゴリへ
+            // 右スワイプ -> 前の項目へ
             if (currentIndex > 0) {
                 saveCurrentInput();
-                currentSmall = smallKeys[currentIndex - 1];
+                currentItem = itemKeys[currentIndex - 1];
                 updateAllUI();
             }
         }
@@ -628,19 +684,17 @@ function printData() {
     if (!container) return;
 
     let html = "";
-    for (const big in appData) {
-        html += `<h1 class="print-big">${big}</h1>`;
-        for (const mid in appData[big]) {
-            html += `<h2 class="print-mid">${mid}</h2>`;
-            for (const small in appData[big][mid]) {
-                const item = appData[big][mid][small];
-                html += `
-                    <div class="print-item">
-                        <div class="print-question">${item.question || small}</div>
-                        <div class="print-answer">${item.answer || ""}</div>
-                    </div>
-                `;
-            }
+    for (const folder in appData) {
+        if (folder.startsWith('_')) continue;
+        html += `<h1 class="print-big">${folder}</h1>`;
+        for (const itemKey in appData[folder]) {
+            const item = appData[folder][itemKey];
+            html += `
+                <div class="print-item">
+                    <div class="print-question">${item.question || itemKey}</div>
+                    <div class="print-answer">${item.answer || ""}</div>
+                </div>
+            `;
         }
     }
     container.innerHTML = html;
@@ -664,8 +718,9 @@ function exportData() {
 }
 
 function updateUndoButtonVisibility() {
-    const btn = document.getElementById('undo-btn');
-    if (btn) btn.style.display = localStorage.getItem('scriptor_archive') ? 'inline-flex' : 'none';
+    const menuItem = document.getElementById('undo-menu-item');
+    const hasArchive = !!localStorage.getItem('scriptor_archive');
+    if (menuItem) menuItem.style.display = hasArchive ? 'flex' : 'none';
 }
 
 function toggleFullscreen() {
@@ -694,8 +749,8 @@ function autoResizeQuestion() {
 }
 
 function saveCurrentInput() {
-    if (currentBig && currentMid && currentSmall && appData[currentBig] && appData[currentBig][currentMid] && appData[currentBig][currentMid][currentSmall]) {
-        const item = appData[currentBig][currentMid][currentSmall];
+    if (currentTab && currentItem && appData[currentTab] && appData[currentTab][currentItem]) {
+        const item = appData[currentTab][currentItem];
         item.question = document.getElementById('question').value;
         item.answer = document.getElementById('answer').value;
         item.memo = document.getElementById('memo').value;
@@ -891,14 +946,13 @@ function renderTabs() {
 
     const hasImportantInBig = (big) => {
         if (!isFilterActive) return true;
-        return Object.values(appData[big]).some(midObj => 
-            Object.values(midObj).some(item => item.important));
+        return Object.values(appData[big]).some(item => item.important);
     };
 
     Object.keys(appData).forEach(big => {
         if (!hasImportantInBig(big)) return;
         const tab = document.createElement('div');
-        tab.className = `tab ${big === currentBig ? 'active' : ''}`;
+        tab.className = `tab ${big === currentTab ? 'active' : ''}`;
         tab.innerText = big;
         tab.draggable = true;
         
@@ -941,37 +995,20 @@ function renderTabs() {
 
         tab.ondragend = () => tab.classList.remove('dragging');
 
-        tab.onclick = () => { saveCurrentInput(); currentBig = big; currentMid = Object.keys(appData[big])[0]; currentSmall = Object.keys(appData[big][currentMid])[0]; updateAllUI(); };
+        tab.onclick = () => { saveCurrentInput(); currentTab = big; currentItem = Object.keys(appData[big])[0] || ""; updateAllUI(); };
         container.appendChild(tab);
     });
 }
 
-function renderMidSelect() {
-    const select = document.getElementById('mid-select');
-    select.innerHTML = "";
-    
-    const hasImportantInMid = (mid) => {
-        if (!isFilterActive) return true;
-        return Object.values(appData[currentBig][mid]).some(item => item.important);
-    };
-
-    Object.keys(appData[currentBig]).forEach(mid => {
-        if (!hasImportantInMid(mid)) return;
-        const opt = new Option(mid, mid);
-        if (mid === currentMid) opt.selected = true;
-        select.add(opt);
-    });
-}
-
-function renderSmallSelect() {
-    const select = document.getElementById('small-select');
+function renderItemSelect() {
+    const select = document.getElementById('item-select');
     select.innerHTML = "";
 
-    Object.keys(appData[currentBig][currentMid]).forEach(small => {
-        if (isFilterActive && !appData[currentBig][currentMid][small].important) return;
+    Object.keys(appData[currentTab]).forEach(itemKey => {
+        if (isFilterActive && !appData[currentTab][itemKey].important) return;
 
-        const opt = new Option(small, small);
-        if (small === currentSmall) opt.selected = true;
+        const opt = new Option(itemKey, itemKey);
+        if (itemKey === currentItem) opt.selected = true;
         select.add(opt);
     });
 }
@@ -980,18 +1017,18 @@ function renderBreadcrumb() {
     const container = document.getElementById('breadcrumb');
     container.innerHTML = "";
     
-    const createSpan = (text, onClickHandler) => {
-        const span = document.createElement('span');
-        span.innerText = text;
-        span.onclick = (e) => onClickHandler(e);
-        return span;
-    };
+    const folderSpan = document.createElement('span');
+    folderSpan.innerText = currentTab;
+    folderSpan.onclick = openTocModal;
 
-    container.appendChild(createSpan(currentBig, (e) => showBreadcrumbPopup(e, 'mid')));
-    container.appendChild(document.createTextNode(' ＞ '));
-    container.appendChild(createSpan(currentMid, (e) => showBreadcrumbPopup(e, 'small')));
-    container.appendChild(document.createTextNode(' ＞ '));
-    container.appendChild(createSpan(currentSmall, () => document.getElementById('small-select').focus()));
+    const separator = document.createTextNode(' ＞ ');
+    
+    const itemSpan = document.createElement('span');
+    itemSpan.innerText = currentItem;
+
+    container.appendChild(folderSpan);
+    container.appendChild(separator);
+    container.appendChild(itemSpan);
 }
 
 function showBreadcrumbPopup(event, type) {
@@ -1007,26 +1044,14 @@ function showBreadcrumbPopup(event, type) {
     let currentActive = "";
     let onSelect = null;
 
-    if (type === 'mid') {
-        items = Object.keys(appData[currentBig]);
-        if (isFilterActive) {
-            items = items.filter(m => Object.values(appData[currentBig][m]).some(i => i.important));
-        }
-        currentActive = currentMid;
-        onSelect = (val) => {
-            currentMid = val;
-            currentSmall = Object.keys(appData[currentBig][val])[0];
-        };
-    } else {
-        items = Object.keys(appData[currentBig][currentMid]);
-        if (isFilterActive) {
-            items = items.filter(s => appData[currentBig][currentMid][s].important);
-        }
-        currentActive = currentSmall;
-        onSelect = (val) => {
-            currentSmall = val;
-        };
+    items = Object.keys(appData[currentTab]);
+    if (isFilterActive) {
+        items = items.filter(i => appData[currentTab][i].important);
     }
+    currentActive = currentItem;
+    onSelect = (val) => {
+        currentItem = val;
+    };
 
     items.forEach(val => {
         const item = document.createElement('div');
@@ -1057,116 +1082,74 @@ function showBreadcrumbPopup(event, type) {
     }, 0);
 }
 
-function changeMid() {
+function changeItem() {
     saveCurrentInput();
-    currentMid = document.getElementById('mid-select').value;
-    currentSmall = Object.keys(appData[currentBig][currentMid])[0];
-    updateAllUI();
-}
-
-function changeSmall() {
-    saveCurrentInput();
-    currentSmall = document.getElementById('small-select').value;
+    currentItem = document.getElementById('item-select').value;
     renderContent();
 }
 
-function addBig() {
-    const name = prompt("新しい大タブの名前:");
+function addTab() { // フォルダ(タブ)の追加
+    const name = prompt("新しいフォルダの名前:");
     if (name && !appData[name]) {
-        appData[name] = { "新規中カテゴリ": { "新規小カテゴリ": { "question": "", "answer": "", "memo": "" } } };
-        currentBig = name; currentMid = "新規中カテゴリ"; currentSmall = "新規小カテゴリ";
+        appData[name] = { "新規項目": { "question": "", "answer": "", "memo": "" } };
+        currentTab = name; currentItem = "新規項目";
         updateAllUI();
         saveData();
         document.getElementById('question').focus();
     }
 }
 
-function addMid() {
-    const name = prompt("新しい中カテゴリの名前:");
-    if (name && !appData[currentBig][name]) {
-        appData[currentBig][name] = { "新規小カテゴリ": { "question": "", "answer": "", "memo": "" } };
-        currentMid = name; currentSmall = "新規小カテゴリ";
+function addItem() {
+    const name = prompt("新しい項目の名前:");
+    if (name && !appData[currentTab][name]) {
+        appData[currentTab][name] = { "question": "", "answer": "", "memo": "" };
+        currentItem = name;
         updateAllUI();
         saveData();
         document.getElementById('question').focus();
     }
 }
 
-function addSmall() {
-    const name = prompt("新しい小カテゴリの名前:");
-    if (name && !appData[currentBig][currentMid][name]) {
-        appData[currentBig][currentMid][name] = { "question": "", "answer": "", "memo": "" };
-        currentSmall = name;
-        updateAllUI();
-        saveData();
-        document.getElementById('question').focus();
-    }
-}
-
-function renameBig() {
-    const newName = prompt(`大タブ「${currentBig}」の新しい名前:`, currentBig);
-    if (newName && newName !== currentBig && !appData[newName]) {
-        appData[newName] = appData[currentBig];
-        delete appData[currentBig];
-        currentBig = newName;
+function renameTab() { // フォルダ(タブ)のリネーム
+    const newName = prompt(`フォルダ「${currentTab}」の新しい名前:`, currentTab);
+    if (newName && newName !== currentTab && !appData[newName]) {
+        appData[newName] = appData[currentTab];
+        delete appData[currentTab];
+        currentTab = newName;
         saveData();
         updateAllUI();
     }
 }
 
-function deleteBig() {
-    if (Object.keys(appData).length <= 1) { alert("最低1つの大タブが必要です。"); return; }
-    if (confirm(`大タブ「${currentBig}」を削除しますか？`)) {
+function deleteTab() { // フォルダ(タブ)の削除
+    if (Object.keys(appData).length <= 1) { alert("最低1つのフォルダが必要です。"); return; }
+    if (confirm(`フォルダ「${currentTab}」を削除しますか？`)) {
         archiveCurrentData();
-        delete appData[currentBig];
-        currentBig = Object.keys(appData)[0];
-        currentMid = Object.keys(appData[currentBig])[0];
-        currentSmall = Object.keys(appData[currentBig][currentMid])[0];
+        delete appData[currentTab];
+        currentTab = Object.keys(appData)[0];
+        currentItem = Object.keys(appData[currentTab])[0];
         saveData();
         updateAllUI();
     }
 }
 
-function renameMid() {
-    const newName = prompt(`中カテゴリ「${currentMid}」の新しい名前:`, currentMid);
-    if (newName && newName !== currentMid && !appData[currentBig][newName]) {
-        appData[currentBig][newName] = appData[currentBig][currentMid];
-        delete appData[currentBig][currentMid];
-        currentMid = newName;
+function renameItem() {
+    const newName = prompt(`項目「${currentItem}」の新しい名前:`, currentItem);
+    if (newName && newName !== currentItem && !appData[currentTab][newName]) {
+        appData[currentTab][newName] = appData[currentTab][currentItem];
+        delete appData[currentTab][currentItem];
+        currentItem = newName;
         saveData();
         updateAllUI();
     }
 }
 
-function deleteMid() {
-    if (Object.keys(appData[currentBig]).length <= 1) { alert("最低1つの中カテゴリが必要です。"); return; }
-    if (confirm(`中カテゴリ「${currentMid}」を削除しますか？`)) {
+function deleteItem() {
+    if (Object.keys(appData[currentTab]).length <= 1) { alert("最低1つの項目が必要です。"); return; }
+    if (confirm(`項目「${currentItem}」を削除しますか？`)) {
         archiveCurrentData();
-        delete appData[currentBig][currentMid];
-        currentMid = Object.keys(appData[currentBig])[0];
-        currentSmall = Object.keys(appData[currentBig][currentMid])[0];
-        saveData();
-        updateAllUI();
-    }
-}
-
-function renameSmall() {
-    const newName = prompt(`小カテゴリ「${currentSmall}」の新しい名前:`, currentSmall);
-    if (newName && newName !== currentSmall && !appData[currentBig][currentMid][newName]) {
-        appData[currentBig][currentMid][newName] = appData[currentBig][currentMid][currentSmall];
-        delete appData[currentBig][currentMid][currentSmall];
-        currentSmall = newName;
-        saveData();
-        updateAllUI();
-    }
-}
-
-function deleteSmall() {
-    if (Object.keys(appData[currentBig][currentMid]).length <= 1) { alert("最低1つの小カテゴリが必要です。"); return; }
-    if (confirm(`小カテゴリ「${currentSmall}」を削除しますか？`)) {
-        archiveCurrentData();
-        delete appData[currentBig][currentMid][currentSmall];
-        currentSmall = Object.keys(appData[currentBig][currentMid])[0];
+        delete appData[currentTab][currentItem];
+        currentItem = Object.keys(appData[currentTab])[0];
         saveData();
         updateAllUI();
     }
@@ -1197,58 +1180,42 @@ function openTocModal() {
     container.innerHTML = "";
     modal.style.display = 'flex';
 
-    Object.keys(appData).forEach(big => {
-        if (!appData[big] || Object.keys(appData[big]).length === 0) return;
+    Object.keys(appData).forEach(folder => {
+        if (folder.startsWith('_')) return;
+        if (!appData[folder] || Object.keys(appData[folder]).length === 0) return;
 
-        const midKeysToShow = Object.keys(appData[big]).filter(mid => {
-            const smallKeys = Object.keys(appData[big][mid]).filter(small => {
-                return !isFilterActive || appData[big][mid][small].important;
-            });
-            return smallKeys.length > 0;
+        const itemsToShow = Object.keys(appData[folder]).filter(itemKey => {
+            return !isFilterActive || appData[folder][itemKey].important;
         });
 
-        if (midKeysToShow.length === 0) return;
+        if (itemsToShow.length === 0) return;
 
-        // 大カテゴリ
+        // フォルダタイトル
         const bigDiv = document.createElement('div');
         bigDiv.className = 'toc-big-title';
-        bigDiv.innerText = big;
+        bigDiv.innerText = folder;
         container.appendChild(bigDiv);
 
-        midKeysToShow.forEach(mid => {
-            // 中カテゴリ
-            const midDiv = document.createElement('div');
-            midDiv.className = 'toc-mid-title';
-            midDiv.innerText = mid;
-            container.appendChild(midDiv);
+        itemsToShow.forEach(itemKey => {
+            const item = appData[folder][itemKey];
+            const smallDiv = document.createElement('div');
+            const isActive = (folder === currentTab && itemKey === currentItem);
+            smallDiv.className = 'toc-small-item' + (isActive ? ' active' : '');
 
-            Object.keys(appData[big][mid]).forEach(small => {
-                const item = appData[big][mid][small];
-                if (isFilterActive && !item.important) return;
+            const label = item.question || itemKey;
+            smallDiv.innerHTML = `
+                <span>${label}</span>
+                ${item.important ? '<span class="material-symbols-outlined toc-star">star</span>' : ''}
+            `;
 
-                // 小カテゴリ（質問項目）
-                const smallDiv = document.createElement('div');
-                const isActive = (big === currentBig && mid === currentMid && small === currentSmall);
-                smallDiv.className = 'toc-small-item' + (isActive ? ' active' : '');
-
-                const label = item.question || small;
-                smallDiv.innerHTML = `
-                    <span>${label}</span>
-                    ${item.important ? '<span class="material-symbols-outlined toc-star">star</span>' : ''}
-                `;
-
-                smallDiv.onclick = () => {
-                    if (typeof saveCurrentInput === 'function') {
-                        saveCurrentInput();
-                    }
-                    currentBig = big;
-                    currentMid = mid;
-                    currentSmall = small;
-                    updateAllUI();
-                    document.getElementById('toc-modal').style.display = 'none';
-                };
-                container.appendChild(smallDiv);
-            });
+            smallDiv.onclick = () => {
+                saveCurrentInput();
+                currentTab = folder;
+                currentItem = itemKey;
+                updateAllUI();
+                document.getElementById('toc-modal').style.display = 'none';
+            };
+            container.appendChild(smallDiv);
         });
     });
 }
@@ -1274,15 +1241,14 @@ function handleSearch(query) {
     const results = [];
     const q = query.toLowerCase();
 
-    for (const big in appData) {
-        for (const mid in appData[big]) {
-            for (const small in appData[big][mid]) {
-                const item = appData[big][mid][small];
-                if (small.toLowerCase().includes(q) || 
-                    item.question.toLowerCase().includes(q) || 
-                    item.answer.toLowerCase().includes(q)) {
-                    results.push({ big, mid, small, question: item.question || small });
-                }
+    for (const folder in appData) {
+        if (folder.startsWith('_')) continue;
+        for (const itemKey in appData[folder]) {
+            const item = appData[folder][itemKey];
+            if (itemKey.toLowerCase().includes(q) || 
+                item.question.toLowerCase().includes(q) || 
+                item.answer.toLowerCase().includes(q)) {
+                results.push({ folder, itemKey, question: item.question || itemKey });
             }
         }
     }
@@ -1293,14 +1259,13 @@ function handleSearch(query) {
             const div = document.createElement('div');
             div.className = 'search-item';
             div.innerHTML = `
-                <div class="item-path">${res.big} ＞ ${res.mid}</div>
+                <div class="item-path">${res.folder}</div>
                 <div class="item-text">${res.question}</div>
             `;
             div.onclick = () => {
                 saveCurrentInput();
-                currentBig = res.big;
-                currentMid = res.mid;
-                currentSmall = res.small;
+                currentTab = res.folder;
+                currentItem = res.itemKey;
                 updateAllUI();
                 closeSearchModal();
             };
@@ -1350,20 +1315,46 @@ window.onload = () => {
 
     // ショートカットキー設定
     window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            // 1. モーダル類をすべて隠す
+            const modals = document.querySelectorAll('.modal-overlay');
+            modals.forEach(m => m.style.display = 'none');
+            const timer = document.getElementById('timer-modal');
+            if (timer) timer.style.display = 'none';
+
+            // 2. 全画面解除
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+
+            // 3. 本番モード解除
+            if (isProductionMode) {
+                toggleProductionWithFullscreen();
+            }
+        }
+
         if ((e.ctrlKey || e.metaKey) && e.key === 's') {
             e.preventDefault();
             saveData();
         }
-        // Escキーで本番モードを解除
-        if (e.key === 'Escape' && isProductionMode) {
-            toggleProductionMode();
-        }
     });
 
-    // 検索窓以外をクリックしたら検索結果を閉じる
+    // ドロップダウンやポップアップの外側をクリックしたら閉じる処理
     window.addEventListener('click', (e) => {
+        if (!e.target.closest('.dropdown')) {
+            const dropdowns = document.getElementsByClassName("dropdown-content");
+            for (let i = 0; i < dropdowns.length; i++) {
+                if (dropdowns[i].classList.contains('show')) {
+                    dropdowns[i].classList.remove('show');
+                }
+            }
+        }
         if (!e.target.closest('.search-wrapper')) {
             document.getElementById('search-results').classList.remove('active');
         }
     });
 };
+
+function toggleChecklist(el) {
+    el.classList.toggle('checked');
+}

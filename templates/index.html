@@ -18,54 +18,36 @@
         <div id="tabs-container" class="tabs"></div>
         <div class="card">
             <div class="toolbar">
-                <div style="display: flex; gap: 5px;">
-                    <!-- 2. 練習モード -->
-                    <button class="font-btn" onclick="togglePracticeMode()" title="練習モード"><span class="material-symbols-outlined" id="practice-icon">visibility_off</span></button>
-                    <!-- 3. 本番モード -->
-                    <button class="font-btn" id="production-mode-btn" onclick="toggleProductionMode()" title="本番モード"><span class="material-symbols-outlined" id="production-icon">cast</span></button>
-                    <!-- 4. タイマー -->
-                    <button class="font-btn" id="timer-open-btn" onclick="openTimerModal()" title="タイマー"><span class="material-symbols-outlined">timer</span></button>
-                    <!-- 5. 重要項目のみ表示 -->
-                    <button class="font-btn" onclick="toggleFilterImportant()" title="重要項目のみ表示"><span class="material-symbols-outlined" id="filter-icon">filter_alt</span></button>
-                    <!-- 6. 全画面表示 -->
-                    <button class="font-btn" onclick="toggleFullscreen()" title="全画面表示"><span class="material-symbols-outlined">fullscreen</span></button>
-                    <!-- 7. ダークモード -->
-                    <button class="font-btn" onclick="toggleDarkMode()" title="ダークモード切替"><span class="material-symbols-outlined" id="dark-mode-icon">dark_mode</span></button>
-                    <!-- 8. 印刷 -->
-                    <button class="font-btn" onclick="printData()" title="印刷・PDF保存"><span class="material-symbols-outlined">print</span></button>
-                    <!-- 9. リセット -->
-                    <button class="font-btn" onclick="resetAllData()" title="全てのデータをリセット"><span class="material-symbols-outlined" style="color: #e74c3c;">restart_alt</span></button>
-                    <!-- スマホ用編集モード切替ボタン（PCではCSSで非表示） -->
-                    <button class="font-btn" id="mobile-edit-btn" onclick="toggleMobileEditMode()" title="スマホ編集モード切替"><span class="material-symbols-outlined" id="mobile-edit-icon">edit_off</span></button>
-                    <!-- 9.5 アーカイブ復元（ゴミ箱） -->
-                    <button class="font-btn" id="undo-btn" onclick="restoreFromArchive()" title="最後に削除/リセットしたデータを復元" style="display: none;"><span class="material-symbols-outlined">undo</span></button>
-                    <!-- 10. バックアップ（ダウンロード） -->
-                    <button class="font-btn" onclick="exportData()" title="データをJSONとしてダウンロード"><span class="material-symbols-outlined">download</span></button>
+                <div class="toolbar-left">
+                    <div id="breadcrumb" class="breadcrumb"></div>
                 </div>
-                <div style="display: flex; gap: 5px;">
-                    <!-- 11. 保存 -->
-                    <button class="save-btn" onclick="saveData()">
-                        <span class="material-symbols-outlined" style="font-size: 20px;">save</span> 保存
-                    </button>
+                <div class="toolbar-right">
+                    <button class="icon-only-btn" onclick="openSearchModal()" title="検索"><span class="material-symbols-outlined">search</span></button>
+                    <button class="icon-only-btn" onclick="openGuideModal()" title="ガイド"><span class="material-symbols-outlined">auto_awesome</span></button>
+                    <div class="dropdown">
+                        <button class="icon-only-btn" onclick="toggleSettingsDropdown()" title="設定"><span class="material-symbols-outlined">settings</span></button>
+                        <div id="settings-dropdown" class="dropdown-content">
+                            <a href="#" onclick="toggleDarkMode()">
+                                <span class="material-symbols-outlined" id="dark-mode-icon">dark_mode</span> 
+                                ダークモード
+                            </a>
+                            <a href="#" onclick="printData()"><span class="material-symbols-outlined">print</span> 印刷・PDF保存</a>
+                            <a href="#" onclick="exportData()"><span class="material-symbols-outlined">download</span> バックアップ</a>
+                            <a href="#" onclick="restoreFromArchive()" id="undo-menu-item" style="display:none;"><span class="material-symbols-outlined">undo</span> 削除の復元</a>
+                            <hr>
+                            <a href="#" onclick="resetAllData()" style="color: #e74c3c;"><span class="material-symbols-outlined">restart_alt</span> 初期化</a>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div id="breadcrumb" class="breadcrumb"></div>
-
             <div class="hierarchy-nav">
                 <div class="nav-group">
-                    フォルダ: 
-                    <select id="mid-select" onchange="changeMid()"></select>
-                    <button class="icon-btn" onclick="addMid()" title="追加"><span class="material-symbols-outlined">add</span></button>
-                    <button class="icon-btn" onclick="renameMid()" title="名前の変更"><span class="material-symbols-outlined">edit</span></button>
-                    <button class="icon-btn" onclick="deleteMid()" title="削除"><span class="material-symbols-outlined">delete</span></button>
-                </div>
-                <div class="nav-group">
                     項目: 
-                    <select id="small-select" onchange="changeSmall()"></select>
-                    <button class="icon-btn" onclick="addSmall()" title="追加"><span class="material-symbols-outlined">add</span></button>
-                    <button class="icon-btn" onclick="renameSmall()" title="名前の変更"><span class="material-symbols-outlined">edit</span></button>
-                    <button class="icon-btn" onclick="deleteSmall()" title="削除"><span class="material-symbols-outlined">delete</span></button>
+                    <select id="item-select" onchange="changeItem()"></select>
+                    <button class="icon-btn" onclick="addItem()" title="追加"><span class="material-symbols-outlined">add</span></button>
+                    <button class="icon-btn" onclick="renameItem()" title="名前の変更"><span class="material-symbols-outlined">edit</span></button>
+                    <button class="icon-btn" onclick="deleteItem()" title="削除"><span class="material-symbols-outlined">delete</span></button>
                 </div>
             </div>
             
@@ -113,25 +95,16 @@
         </div>
     </div>
 
-    <div class="fab-container">
-        <button class="fab add" onclick="addBig()" title="大タブ（大カテゴリ）を追加">
-            <span class="material-symbols-outlined">add</span>
-        </button>
-        <button class="fab edit" onclick="renameBig()" title="現在の大タブの名前を変更">
-            <span class="material-symbols-outlined">edit</span>
-        </button>
-        <button class="fab delete" onclick="deleteBig()" title="現在の大タブを削除">
-            <span class="material-symbols-outlined">delete</span>
-        </button>
-        <button class="fab template-btn" onclick="openTemplateModal()" title="テンプレート集">
-            <span class="material-symbols-outlined">auto_awesome</span>
-        </button>
-        <button class="fab list-btn" onclick="openTocModal()" title="目次を表示">
-            <span class="material-symbols-outlined">format_list_bulleted</span>
-        </button>
-        <button class="fab search" onclick="openSearchModal()" title="検索">
-            <span class="material-symbols-outlined">search</span>
-        </button>
+    <!-- 統合FAB (本番モード開始) -->
+    <button id="main-fab" class="main-fab" onclick="toggleProductionWithFullscreen()" title="本番モード開始">
+        <span class="material-symbols-outlined" id="main-fab-icon">play_arrow</span>
+    </button>
+
+    <!-- 編集用ユーティリティ (本番モード中は非表示) -->
+    <div id="edit-actions" class="side-actions">
+        <button class="sub-fab" onclick="addTab()" title="フォルダ追加"><span class="material-symbols-outlined">create_new_folder</span></button>
+        <button class="sub-fab" onclick="openTocModal()" title="目次"><span class="material-symbols-outlined">format_list_bulleted</span></button>
+        <button class="sub-fab" onclick="saveData()" title="手動保存"><span class="material-symbols-outlined">save</span></button>
     </div>
 
     <!-- 検索モーダル -->
@@ -140,6 +113,67 @@
             <div class="modal-header">キーワード検索</div>
             <input type="text" id="modal-search-input" placeholder="検索したい文字を入力..." oninput="handleSearch(this.value)">
             <div id="modal-search-results" class="search-results-container active"></div>
+        </div>
+    </div>
+
+    <!-- ガイドモーダル -->
+    <div id="guide-modal" class="modal-overlay" onclick="closeGuideModal(event)">
+        <div class="modal-content guide-modal-content cool-theme" onclick="event.stopPropagation()">
+            <div class="modal-header guide-header"><span class="material-symbols-outlined">auto_awesome</span> お守りガイド</div>
+            <div class="guide-scroll-area">
+                <div class="breathing-section">
+                    <div class="breathing-circle"></div>
+                    <p>10秒だけ、この円に合わせて深呼吸しましょう</p>
+                </div>
+
+                <h3 class="guide-sub-title">本番前のチェックリスト</h3>
+                <ul class="interactive-checklist">
+                    <li onclick="toggleChecklist(this)">口角を少し上げて、明るいトーンで！</li>
+                    <li onclick="toggleChecklist(this)">「えー」「あのー」を減らし、語尾を言い切る！</li>
+                    <li onclick="toggleChecklist(this)">結論（一番伝えたいこと）から話し始める！</li>
+                </ul>
+
+                <h3 class="guide-sub-title">やる気が出る言葉</h3>
+                <div class="motivation-section">
+                    <div class="motivation-input-group">
+                        <input type="text" id="motivation-input" placeholder="例：自分ならできる！">
+                        <button class="add-phrase-btn" onclick="addMotivationPhrase()">追加</button>
+                    </div>
+                    <ul id="motivation-list" class="motivation-list"></ul>
+                </div>
+
+                <h3 class="guide-sub-title">困った時の魔法のフレーズ</h3>
+                <div class="phrase-box">
+                    <p>「少々お時間をいただいてもよろしいでしょうか？」(考える時間が欲しい時)</p>
+                    <p>「申し訳ありません、もう一度ご質問を伺ってもよろしいでしょうか？」(聞き取れなかった時)</p>
+                </div>
+
+                <h3 class="guide-sub-title">豆知識：緊張を味方につける</h3>
+                <div class="column-box">
+                    <strong>「緊張＝体が準備を始めたサイン」</strong>
+                    <p>心臓がドキドキするのは、脳に酸素をたくさん送ってフル回転させようとしている証拠です。「緊張してきた」ではなく「準備が整ってきた」と脳内で言い換えるだけで、パフォーマンスが向上します。</p>
+                </div>
+
+                <h3 class="guide-sub-title">Scriptor 操作マニュアル</h3>
+                <div class="manual-box">
+                    <ul>
+                        <li><strong>Escキー</strong>：全画面・本番モードを即座に解除</li>
+                        <li><strong>Ctrl + S</strong>：現在の内容を手動保存</li>
+                        <li><strong>スワイプ</strong>：スマホで左右にスワイプして項目移動</li>
+                    </ul>
+                </div>
+
+                <div class="affiliate-placeholder">
+                    <p class="affiliate-title">― 面接の自信を支える便利アイテム ―</p>
+                    <div class="affiliate-content">
+                        <div class="affiliate-img">広告バナー</div>
+                        <div class="affiliate-text">
+                            <strong>勝負の日のためのネクタイ/ブラウス</strong><br>
+                            第一印象をアップさせるおすすめアイテム
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -195,5 +229,8 @@
         </div>
     </div>
     <div id="print-all-container" class="print-only"></div>
+
+    <!-- 本番モード用フローティング・メッセージ -->
+    <div id="production-phrase" class="production-phrase"></div>
 </body>
 </html>

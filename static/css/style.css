@@ -46,10 +46,54 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     border-bottom: 1px solid #eee;
     padding-bottom: 10px;
 }
+
+.toolbar-right {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.icon-only-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #7f8c8d;
+    padding: 5px;
+    transition: color 0.2s;
+}
+
+.icon-only-btn:hover { color: #3498db; }
+
+/* --- ドロップダウンメニュー --- */
+.dropdown { position: relative; display: inline-block; }
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: #fff;
+    min-width: 180px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 2000;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+.dropdown-content a {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9em;
+}
+.dropdown-content a:hover { background-color: #f1f1f1; }
+.dropdown-content hr { border: 0; border-top: 1px solid #eee; margin: 0; }
+.show { display: block; }
 
 .search-results-container {
     position: relative;
@@ -400,7 +444,7 @@ body.dark-mode .timer-presets button { background: #333; border-color: #444; col
 .breadcrumb {
     font-size: 0.85em;
     color: #888;
-    margin-bottom: 15px;
+    margin-bottom: 0;
 }
 
 .hierarchy-nav {
@@ -718,9 +762,12 @@ body.dark-mode .tab.active {
     color: #fff;
 }
 
-.production-mode .fab-container,
+/* --- 本番モード（ミニマリスト）設定 --- */
+.production-mode .side-actions,
 .production-mode .hierarchy-nav,
-.production-mode .sticky-note {
+.production-mode .sticky-note,
+.production-mode .toolbar-left,
+.production-mode .icon-only-btn:not([onclick*="Settings"]) {
     display: none !important;
 }
 
@@ -729,10 +776,58 @@ body.dark-mode .tab.active {
     justify-content: flex-end;
 }
 
-.production-mode .toolbar .save-btn,
-.production-mode .toolbar .search-wrapper,
-.production-mode .toolbar .font-btn:not(#production-mode-btn):not(#timer-open-btn):not([onclick*="changeFontSize"]):not([onclick*="toggleFullscreen"]):not([onclick*="toggleAutoScroll"]) {
-    display: none !important;
+.production-mode .main-fab {
+    background-color: #e74c3c; /* 停止ボタンとして目立たせる */
+    transform: scale(0.9);
+    opacity: 0.8;
+}
+
+.main-fab {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    background-color: #2980b9;
+    color: white;
+    border: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    cursor: pointer;
+    z-index: 5000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.main-fab .material-symbols-outlined {
+    font-size: 35px;
+}
+
+.side-actions {
+    position: fixed;
+    bottom: 110px;
+    right: 37px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 4999;
+    transition: opacity 0.3s;
+}
+
+.sub-fab {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background-color: #7f8c8d;
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
 }
 
 .production-mode .card-footer .copy-btn {
@@ -844,6 +939,183 @@ body.dark-mode .search-results-container { background-color: #333; border-color:
 body.dark-mode .search-item { border-bottom-color: #444; }
 body.dark-mode .search-item:hover { background-color: #444; }
 body.dark-mode .search-item .item-text { color: #eee; }
+
+/* --- お守りガイド アップグレード --- */
+.guide-modal-content {
+    background-color: #f8fafc !important; /* クールなブルーグレー */
+    border: 2px solid #475569;
+    color: #1e293b;
+}
+
+.guide-header {
+    color: #334155;
+    border-bottom: 2px solid #334155;
+    text-align: center;
+}
+
+.guide-scroll-area {
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.guide-sub-title {
+    border-left: 5px solid #2563eb; /* ブルーのアクセント */
+    padding-left: 10px;
+    margin-top: 25px;
+    font-size: 1.1em;
+    color: #1e3a8a;
+}
+
+.interactive-checklist {
+    list-style: none;
+    padding: 0;
+}
+
+.interactive-checklist li {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px dashed #cbd5e1;
+    display: flex;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.interactive-checklist li:hover { background: rgba(37, 99, 235, 0.05); }
+.interactive-checklist li::before { content: "☐ "; margin-right: 10px; font-family: monospace; }
+.interactive-checklist li.checked { text-decoration: line-through; color: #64748b; opacity: 0.7; }
+.interactive-checklist li.checked::before { content: "☑ "; color: #2563eb; }
+
+.breathing-section {
+    text-align: center;
+    margin: 15px 0;
+    padding: 20px;
+    background: rgba(184, 134, 11, 0.08);
+    border-radius: 15px;
+}
+
+.breathing-circle {
+    width: 50px;
+    height: 50px;
+    background: #64748b;
+    border-radius: 50%;
+    margin: 0 auto 15px;
+    animation: breathe 5s infinite ease-in-out;
+}
+
+@keyframes breathe {
+    0%, 100% { transform: scale(1); opacity: 0.4; }
+    50% { transform: scale(2.0); opacity: 1; }
+}
+
+/* --- やる気が出る言葉セクション --- */
+.motivation-section {
+    margin-bottom: 20px;
+}
+
+.motivation-input-group {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.motivation-input-group input {
+    flex-grow: 1;
+    padding: 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.add-phrase-btn {
+    padding: 5px 15px;
+    background: #334155;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.motivation-list {
+    list-style: none;
+    padding: 0;
+}
+
+.phrase-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    border-radius: 6px;
+    border: 1px solid #eee;
+    font-style: italic;
+    color: #5d4037;
+}
+
+.phrase-item button {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+}
+
+.phrase-item button:hover { color: #e74c3c; }
+
+.phrase-box {
+    background: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    font-size: 0.9em;
+}
+
+.column-box, .manual-box {
+    background: #f1f5f9;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.85em;
+    line-height: 1.5;
+}
+
+.manual-box ul {
+    padding-left: 20px;
+    margin: 5px 0;
+}
+
+.affiliate-placeholder {
+    margin-top: 40px;
+    padding: 15px;
+    border: 1px dashed #64748b;
+    background: #fff;
+    border-radius: 8px;
+}
+
+.affiliate-title { font-size: 0.8em; font-weight: bold; text-align: center; color: #64748b; margin-bottom: 10px; }
+.affiliate-content { display: flex; gap: 15px; align-items: center; }
+.affiliate-img { width: 80px; height: 60px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.7em; }
+.affiliate-text { font-size: 0.85em; }
+
+/* --- 本番モード応援メッセージ --- */
+.production-phrase {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 6000;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 0.9em;
+    display: none;
+    pointer-events: none;
+    animation: fadeInOut 5s infinite;
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0; transform: translateY(10px); }
+    15%, 85% { opacity: 1; transform: translateY(0); }
+}
 
 /* --- 目次（TOC）用スタイル --- */
 .toc-list-container {
