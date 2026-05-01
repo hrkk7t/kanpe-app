@@ -22,6 +22,7 @@
                     <div id="breadcrumb" class="breadcrumb"></div>
                 </div>
                 <div class="toolbar-right">
+                    <button id="mobile-edit-toggle" class="icon-only-btn" onclick="toggleMobileEditMode()" title="編集モード切替" style="display: none;"><span class="material-symbols-outlined" id="mobile-edit-icon">edit_off</span></button>
                     <button class="icon-only-btn" onclick="openSearchModal()" title="検索"><span class="material-symbols-outlined">search</span></button>
                     <button class="icon-only-btn" onclick="openGuideModal()" title="ガイド"><span class="material-symbols-outlined">auto_awesome</span></button>
                     <div class="dropdown">
@@ -110,6 +111,7 @@
     <div id="edit-actions" class="side-actions">
         <button class="sub-fab" onclick="addTab()" title="フォルダ追加"><span class="material-symbols-outlined">create_new_folder</span></button>
         <button class="sub-fab" onclick="openTemplateModal()" title="テンプレート集"><span class="material-symbols-outlined">grid_view</span></button>
+        <button class="sub-fab" onclick="openTimerModal()" title="タイマー"><span class="material-symbols-outlined">timer</span></button>
         <button class="sub-fab" onclick="openTocModal()" title="目次"><span class="material-symbols-outlined">format_list_bulleted</span></button>
         <button class="sub-fab" onclick="saveData()" title="手動保存"><span class="material-symbols-outlined">save</span></button>
     </div>

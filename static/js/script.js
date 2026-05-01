@@ -17,20 +17,28 @@ let autoSaveTimer = null;
 let motivationInterval = null;
 
 async function loadData() {
-    const response = await fetch('/api/data');
-    appData = await response.json();
+    try {
+        // キャッシュ対策としてタイムスタンプを付与
+        const response = await fetch('/api/data?t=' + new Date().getTime());
+        appData = await response.json();
 
-    // 表示対象のフォルダ（キーが _ で始まらないもの）を抽出
-    const folderKeys = Object.keys(appData).filter(k => !k.startsWith('_'));
+        // データが完全に空、またはフォルダが1つもない場合に初期化を実行
+        const folderKeys = Object.keys(appData || {}).filter(k => !k.startsWith('_'));
 
-    if (folderKeys.length === 0) {
-        // データが何もない、または内部データしかない場合は初期テンプレートをセットアップ
-        setupDefaultTemplates();
-    } else {
-        // 既存データがある場合は、最初のフォルダを表示
-        currentTab = folderKeys[0];
-        currentItem = Object.keys(appData[currentTab])[0] || "";
-        updateAllUI();
+        if (folderKeys.length === 0) {
+            console.log("No valid data found, setting up default templates.");
+            setupDefaultTemplates();
+        } else {
+            currentTab = folderKeys[0];
+            currentItem = Object.keys(appData[currentTab])[0] || "";
+            updateAllUI(); // ここでUIを更新
+        }
+    } catch (e) {
+        console.error("Data load failed, loading templates.", e);
+        // エラーが発生した場合も初期テンプレートをセットアップ
+        await setupDefaultTemplates(); // await を追加
+    } finally {
+        updateInputState(); // ロード後に必ず入力状態を更新
     }
 }
 
@@ -273,9 +281,7 @@ function setupDefaultTemplates() {
         const template = templateLibrary[key];
         if (template) {
             Object.keys(template.data).forEach(folder => {
-                if (!appData[folder]) {
                     appData[folder] = JSON.parse(JSON.stringify(template.data[folder]));
-                }
             });
         }
     });
@@ -283,7 +289,16 @@ function setupDefaultTemplates() {
     // 「志望動機」を初期表示に設定（存在する場合）
     if (appData["志望動機"]) {
         currentTab = "志望動機";
-        currentItem = Object.keys(appData[currentTab])[0];
+        const items = Object.keys(appData[currentTab]);
+        currentItem = items.length > 0 ? items[0] : "";
+    } else {
+        // 志望動機がなければ最初のフォルダ
+        const keys = Object.keys(appData).filter(k => !k.startsWith('_'));
+        if (keys.length > 0) {
+            currentTab = keys[0];
+            const items = Object.keys(appData[currentTab]);
+            currentItem = items.length > 0 ? items[0] : "";
+        }
     }
 
     updateAllUI();
@@ -299,6 +314,14 @@ function updateAllUI() {
 }
 
 function renderContent() {
+    // currentTab, appData[currentTab], currentItem が有効でない場合は描画をスキップ
+    if (!currentTab || !appData[currentTab] || !currentItem || !appData[currentTab][currentItem]) {
+        document.getElementById('question').value = "";
+        document.getElementById('answer').value = "";
+        document.getElementById('memo').value = "";
+        return;
+    }
+    
     const questionInput = document.getElementById('question');
     const item = appData[currentTab][currentItem];
     const answerInput = document.getElementById('answer');
@@ -389,7 +412,7 @@ function toggleMobileEditMode() {
     if (icon) {
         icon.innerText = isMobileEditMode ? 'edit' : 'edit_off';
     }
-    updateInputState();
+    updateInputState(); // 編集モード切り替え後に必ず入力状態を更新
     showToast(isMobileEditMode ? "スマホ編集モードON" : "スマホ編集モードOFF");
 }
 
@@ -400,8 +423,8 @@ function updateInputState() {
     const isMobile = window.innerWidth <= 600;
     const shouldBeReadOnly = isProductionMode || (isMobile && !isMobileEditMode);
     if(q) q.readOnly = shouldBeReadOnly;
-    if(a) a.readOnly = shouldBeReadOnly;
-    if(m) m.readOnly = shouldBeReadOnly;
+    if(a) a.readOnly = shouldBeReadOnly; // 回答欄は常に読み取り専用にしない
+    if(m) m.readOnly = shouldBeReadOnly; // メモ欄は常に読み取り専用にしない
 }
 
 function toggleProductionWithFullscreen() {
@@ -422,6 +445,8 @@ function toggleProductionWithFullscreen() {
         fab.title = "編集に戻る";
         if (editActions) editActions.style.display = 'none';
         showToast("本番モード・フルスクリーン開始");
+        openTimerModal(); // 本番モード開始時にタイマーを自動表示
+        if (!timerInterval) toggleTimer(); // タイマーを自動スタート
         
         // 応援メッセージの開始
         updateProductionPhrase();
@@ -501,7 +526,15 @@ function toggleStar() {
 
 // --- タイマー機能 ---
 function openTimerModal() {
-    document.getElementById('timer-modal').style.display = 'block';
+    const panel = document.getElementById('timer-modal');
+    panel.style.display = 'block';
+    
+    // 本番モード時のスマホタイマーをタップで操作可能にする
+    panel.onclick = (e) => {
+        if (isProductionMode && window.innerWidth <= 600) {
+            toggleTimer();
+        }
+    };
 }
 
 function closeTimerModal(event) {
@@ -748,10 +781,14 @@ function autoResizeQuestion() {
 
 function saveCurrentInput() {
     if (currentTab && currentItem && appData[currentTab] && appData[currentTab][currentItem]) {
+        const q = document.getElementById('question');
+        const a = document.getElementById('answer');
+        if (!q || !a || q.value === "" && a.value === "") return; // DOM未準備、または初期化直後の空上書きを防止
+
         const item = appData[currentTab][currentItem];
-        item.question = document.getElementById('question').value;
-        item.answer = document.getElementById('answer').value;
-        item.memo = document.getElementById('memo').value;
+        item.question = q.value;
+        item.answer = a.value;
+        item.memo = document.getElementById('memo').value || "";
         item.color = currentNoteColor;
         const note = document.querySelector('.sticky-note');
         item.top = note.style.top;
@@ -1160,8 +1197,11 @@ function deleteItem() {
 async function resetAllData() {
     if (confirm("全てのデータを初期状態に戻しますか？")) {
         archiveCurrentData();
-        const res = await fetch('/api/reset', { method: 'POST' });
-        if (res.ok) location.reload();
+        const res = await fetch('/api/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+        if (res.ok) {
+            appData = {}; // クライアント側のデータもクリア
+            await setupDefaultTemplates(); // 初期テンプレートを再セットアップ
+        }
     }
 }
 
@@ -1302,7 +1342,7 @@ window.onload = () => {
     document.getElementById('memo').addEventListener('input', triggerAutoSave);
 
     // スマホ入力中にキーボードが表示された際、フッターやFABを隠す処理
-    const inputs = document.querySelectorAll('input, textarea');
+    const inputs = document.querySelectorAll('#question, #answer, #memo, #motivation-input'); // 特定の入力フィールドのみ対象
     inputs.forEach(input => {
         input.addEventListener('focus', () => {
             if (window.innerWidth <= 600) document.body.classList.add('keyboard-open');

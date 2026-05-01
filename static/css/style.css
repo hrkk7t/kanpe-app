@@ -1225,12 +1225,17 @@ body.dark-mode .template-desc { color: #bbb; }
         display: inline-flex;
     }
 
-    /* スマホ閲覧モード時は編集系ボタン（保存・フォルダ/項目の操作・FABの追加/編集/削除）を隠す */
+    /* スマホでのみ編集モードトグルを表示 */
+    #mobile-edit-toggle { display: inline-flex !important; }
+
+    /* スマホ閲覧モード時は編集系ユーティリティとFABを隠す */
     body:not(.mobile-edit-active) .hierarchy-nav .icon-btn,
     body:not(.mobile-edit-active) .save-btn,
-    body:not(.mobile-edit-active) .side-actions,
-    body:not(.mobile-edit-active) #main-fab {
+    body:not(.mobile-edit-active) .side-actions {
         display: none !important;
+    }
+    body:not(.mobile-edit-active) #main-fab {
+        display: flex !important; /* 本番モードボタンは常に表示 */
     }
 
     /* スマホ編集モードONの時に表示を確実に強制 */
@@ -1286,39 +1291,44 @@ body.dark-mode .template-desc { color: #bbb; }
     }
     .char-count { width: 100%; text-align: center; font-size: 0.8em; margin: 0; }
 
-    /* 下部に横一列に配置 */
-    .fab-container {
+    /* 下部に横一列に配置 (スマホ用) */
+    .side-actions {
         flex-direction: row;
         right: 0 !important;
-        bottom: 25px !important;
+        bottom: 110px !important;
         left: 0 !important;
         justify-content: center;
         gap: 12px;
         display: flex !important;
-        z-index: 9999;
+        z-index: 5500; /* 本文より確実に上 */
         width: 100%;
-        pointer-events: none;
+        pointer-events: none; /* コンテナはスルー */
     }
-    .fab {
+
+    .sub-fab {
         width: 48px;
         height: 48px;
         display: flex !important;
-        pointer-events: auto;
+        pointer-events: auto; /* ボタン本体はクリックを許可 */
+        background-color: #475569; /* クールカラーに統一 */
     }
+
     /* スマホ編集モード時はテンプレートを非表示 */
     body.mobile-edit-active .fab.template-btn {
         display: none !important;
     }
     /* キーボード表示時は邪魔なUIを隠す */
     body.keyboard-open .card-footer,
-    body.keyboard-open .fab-container {
+    body.keyboard-open .side-actions,
+    body.keyboard-open #main-fab {
         display: none !important;
     }
 
     .card {
-        padding: 15px; /* 左右均等なパディングに変更してズレを解消 */
+        padding: 15px 15px 180px 15px !important; /* 下部に大きな余白を確保してボタン被りを防止 */
         background-image: none; /* スマホでは穴のデザインを消してスペースを確保 */
         touch-action: pan-y; /* 横スワイプをJSで処理し、縦スクロールを維持 */
+        min-height: 100vh;
     }
     .hierarchy-nav {
         flex-direction: column;
@@ -1394,6 +1404,36 @@ body.dark-mode .template-desc { color: #bbb; }
     .timer-presets { margin-bottom: 8px; width: 100%; justify-content: flex-start; }
     .timer-actions { margin-bottom: 0; gap: 5px; }
     .timer-btn { padding: 8px; }
+
+        /* 本番モード中のタイマー最小化 (スマホ) */
+        .production-mode .timer-panel {
+            top: 10px !important;
+            left: 10px !important;
+            right: auto !important;
+            width: auto !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            border-radius: 20px !important;
+            padding: 4px 12px !important;
+            border: none !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+            cursor: pointer;
+            pointer-events: auto !important;
+        }
+        .production-mode .timer-panel .timer-header,
+        .production-mode .timer-panel .timer-target-section,
+        .production-mode .timer-panel .timer-presets,
+        .production-mode .timer-panel .timer-actions {
+            display: none !important;
+        }
+        .production-mode .timer-panel .timer-large-display {
+            font-size: 0.9em !important;
+            background: transparent !important;
+            border: none !important;
+            color: #fff !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            min-width: auto !important;
+        }
 }
 
 /* --- 印刷用設定 --- */
